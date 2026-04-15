@@ -169,6 +169,7 @@ jobs:
         env:
           GIT_SSH_COMMAND: ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
         run: |
+          git checkout --detach
           git fetch --prune --tags origin '+refs/heads/*:refs/heads/*'
           git remote remove mirror 2>/dev/null || true
           git remote add mirror "$MIRROR_SSH_URL"
