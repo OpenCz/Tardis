@@ -145,8 +145,33 @@ jobs:
             exit 1
           fi
 
-      - uses: pixta-dev/repository-mirroring-action@v1
-        with:
-          target_repo_url: ${{ env.MIRROR_SSH_URL }}
-          ssh_private_key: ${{ secrets.PRIVATE_SSH_KEY }}
-          ssh_username: git
+      - name: Configure SSH key
+        env:
+          PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
+        run: |
+          if [ -z "$PRIVATE_SSH_KEY" ]; then
+            echo "::error::PRIVATE_SSH_KEY is empty. Define secrets.PRIVATE_SSH_KEY in the production environment."
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # Handle keys stored either with real newlines or with literal \n sequences.
+          printf '%s' "$PRIVATE_SSH_KEY" | perl -pe 's/\\n/\n/g' | tr -d '\r' > ~/.ssh/id_rsa
+          echo >> ~/.ssh/id_rsa
+
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Push mirror
+        env:
+          GIT_SSH_COMMAND: ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
+        run: |
+          git fetch --prune --tags origin '+refs/heads/*:refs/heads/*'
+          git remote remove mirror 2>/dev/null || true
+          git remote add mirror "$MIRROR_SSH_URL"
+
+          git ls-remote mirror >/dev/null
+          git push --mirror mirror
