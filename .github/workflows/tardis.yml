@@ -84,6 +84,8 @@ jobs:
     needs: lint_and_sanity
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: tardis_production
+    env:
+      MIRROR_SSH_URL: git@github.com:EpitechPGE1-2025/G-AIA-210-NCE-2-1-tardis-1.git
 
     steps:
       - name: Checkout repository
@@ -95,7 +97,6 @@ jobs:
         shell: bash
         env:
           PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
-          MIRROR_SSH_URL: git@github.com:EpitechPGE1-2025/G-AIA-210-NCE-2-1-tardis-1.git
         run: |
           set -euo pipefail
 
@@ -117,41 +118,89 @@ jobs:
           import base64
           import os
           import pathlib
+          import re
+          import textwrap
+
+          def normalize_newlines(value: str) -> str:
+              return value.replace("\r\n", "\n").replace("\r", "\n")
+
+          def expand_escaped_newlines(value: str) -> str:
+              return value.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\r", "\n")
+
+          def reconstruct_flattened_key(value: str) -> str | None:
+              compact = " ".join(value.strip().split())
+              markers = [
+                  ("-----BEGIN OPENSSH PRIVATE KEY-----", "-----END OPENSSH PRIVATE KEY-----"),
+                  ("-----BEGIN RSA PRIVATE KEY-----", "-----END RSA PRIVATE KEY-----"),
+                  ("-----BEGIN EC PRIVATE KEY-----", "-----END EC PRIVATE KEY-----"),
+                  ("-----BEGIN PRIVATE KEY-----", "-----END PRIVATE KEY-----"),
+              ]
+              for begin, end in markers:
+                  if begin not in compact or end not in compact:
+                      continue
+                  start = compact.find(begin) + len(begin)
+                  finish = compact.find(end, start)
+                  body = re.sub(r"\s+", "", compact[start:finish])
+                  if not body:
+                      continue
+                  wrapped = "\n".join(textwrap.wrap(body, width=70))
+                  return f"{begin}\n{wrapped}\n{end}\n"
+              return None
+
+          def add_candidate(candidates: list[str], candidate: str | None) -> None:
+              if not candidate:
+                  return
+              candidate = normalize_newlines(candidate)
+              if not candidate.endswith("\n"):
+                  candidate += "\n"
+              if candidate not in candidates:
+                  candidates.append(candidate)
 
           raw = os.environ["PRIVATE_SSH_KEY"].strip().strip('"').strip("'")
           candidates = []
 
-          candidates.append(raw.replace("\\r", "").replace("\\n", "\n"))
-          candidates.append(raw.replace("\r", ""))
+          add_candidate(candidates, raw)
+          add_candidate(candidates, expand_escaped_newlines(raw))
+          add_candidate(candidates, reconstruct_flattened_key(raw))
 
           try:
-              decoded = base64.b64decode(raw, validate=True).decode("utf-8")
+              decoded_bytes = base64.b64decode(re.sub(r"\s+", "", raw), validate=False)
+              decoded = decoded_bytes.decode("utf-8")
           except Exception:
               decoded = None
 
           if decoded:
-              candidates.append(decoded.replace("\\r", "").replace("\\n", "\n"))
-              candidates.append(decoded.replace("\r", ""))
+              add_candidate(candidates, decoded)
+              add_candidate(candidates, expand_escaped_newlines(decoded))
+              add_candidate(candidates, reconstruct_flattened_key(decoded))
 
           ssh_dir = pathlib.Path.home() / ".ssh"
           for index, content in enumerate(candidates, start=1):
               candidate_path = ssh_dir / f"id_mirror_candidate_{index}"
-              if not content.endswith("\n"):
-                  content += "\n"
               candidate_path.write_text(content, encoding="utf-8")
               candidate_path.chmod(0o600)
+
+          # Print only metadata, never key content.
+          token = raw.split(maxsplit=1)[0] if raw else ""
+          if token.startswith("ssh-"):
+              print("Detected public-key prefix in PRIVATE_SSH_KEY; expected a private key block.")
+          print(f"Prepared {len(candidates)} SSH key candidate(s).")
           PY
 
           valid_key=""
+          last_error=""
           for candidate in ~/.ssh/id_mirror_candidate_*; do
-            if ssh-keygen -y -f "$candidate" >/dev/null 2>&1; then
+            if ssh-keygen -y -f "$candidate" >/dev/null 2>~/.ssh/last_ssh_key_error; then
               valid_key="$candidate"
               break
+            else
+              last_error="$(tr '\n' ' ' < ~/.ssh/last_ssh_key_error | sed 's/[[:space:]]\+/ /g')"
             fi
           done
 
           if [[ -z "$valid_key" ]]; then
-            echo "::error::No valid SSH private key could be built from PRIVATE_SSH_KEY."
+            echo "::error::No valid SSH private key could be built from PRIVATE_SSH_KEY. Last ssh-keygen error: ${last_error:-unknown}."
+            echo "::error::Expected PRIVATE_SSH_KEY to contain the full private key (BEGIN ... PRIVATE KEY), not the public key."
             exit 1
           fi
 
@@ -174,5 +223,5 @@ jobs:
           git fetch --prune origin '+refs/heads/*:refs/heads/*'
           git fetch --prune origin '+refs/tags/*:refs/tags/*'
 
-          git remote add mirror git@github.com:EpitechPGE1-2025/G-AIA-210-NCE-2-1-tardis-1.git
+          git remote add mirror "$MIRROR_SSH_URL"
           git push --mirror mirror
