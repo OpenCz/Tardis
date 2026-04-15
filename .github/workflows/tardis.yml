@@ -130,7 +130,7 @@ jobs:
     needs:
       - check_mirror
       - run_tests
-    environment: production
+    environment: tardis_production
     runs-on: ubuntu-latest
 
     steps:
@@ -150,7 +150,7 @@ jobs:
           PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
         run: |
           if [ -z "$PRIVATE_SSH_KEY" ]; then
-            echo "::error::PRIVATE_SSH_KEY is empty. Define secrets.PRIVATE_SSH_KEY in the production environment."
+            echo "::error::PRIVATE_SSH_KEY is empty. Define secrets.PRIVATE_SSH_KEY in the tardis_production environment."
             exit 1
           fi
 
