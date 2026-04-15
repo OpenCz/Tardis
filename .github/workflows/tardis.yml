@@ -157,11 +157,31 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
-          # Handle keys stored either with real newlines or with literal \n sequences.
-          printf '%s' "$PRIVATE_SSH_KEY" | perl -pe 's/\\n/\n/g' | tr -d '\r' > ~/.ssh/id_rsa
-          echo >> ~/.ssh/id_rsa
+          KEY_FILE=~/.ssh/id_rsa
+          TMP_DIR=$(mktemp -d)
+          trap 'rm -rf "$TMP_DIR"' EXIT
 
-          chmod 600 ~/.ssh/id_rsa
+          # Try common secret encodings: raw multiline, literal \n escapes, then base64.
+          printf '%s' "$PRIVATE_SSH_KEY" | tr -d '\r' > "$TMP_DIR/key_raw"
+          printf '%s' "$PRIVATE_SSH_KEY" | perl -pe 's/\\n/\n/g' | tr -d '\r' > "$TMP_DIR/key_escaped"
+          printf '%s' "$PRIVATE_SSH_KEY" | tr -d ' \n\r\t' | base64 -d > "$TMP_DIR/key_b64" 2>/dev/null || true
+
+          found_valid_key=false
+          for candidate in "$TMP_DIR/key_raw" "$TMP_DIR/key_escaped" "$TMP_DIR/key_b64"; do
+            [ -s "$candidate" ] || continue
+            if ssh-keygen -y -f "$candidate" >/dev/null 2>&1; then
+              cp "$candidate" "$KEY_FILE"
+              found_valid_key=true
+              break
+            fi
+          done
+
+          if [ "$found_valid_key" != true ]; then
+            echo "::error::PRIVATE_SSH_KEY format is invalid. Supported: multiline key, literal \\n escaped key, or base64-encoded private key."
+            exit 1
+          fi
+
+          chmod 600 "$KEY_FILE"
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
