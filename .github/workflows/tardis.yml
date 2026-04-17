@@ -1,227 +1,28 @@
-name: Tardis CI
+name: Mirror Test
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  lint_and_sanity:
-    name: Lint and Sanity Checks
+  mirror:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          if [[ -s requirements.txt ]]; then
-            python -m pip install -r requirements.txt
-          else
-            echo "requirements.txt is empty, skipping dependency installation."
-          fi
-
-      - name: Validate Python syntax
-        shell: bash
-        run: |
-          set -euo pipefail
-          if find dashboard -name "*.py" -print -quit | grep -q .; then
-            python -m compileall -q dashboard
-            echo "Python syntax validation passed."
-          else
-            echo "No Python files found under dashboard/."
-          fi
-
-      - name: Validate notebook JSON format
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
-          import pathlib
-          import sys
-
-          failed = []
-          notebook_dir = pathlib.Path("notebooks")
-          if not notebook_dir.exists():
-              print("notebooks/ directory not found, skipping notebook validation.")
-              sys.exit(0)
-
-          for notebook in notebook_dir.glob("*.ipynb"):
-              try:
-                  json.loads(notebook.read_text(encoding="utf-8"))
-              except Exception as exc:
-                  failed.append((str(notebook), str(exc)))
-
-          if failed:
-              for path, reason in failed:
-                  print(f"{path}: {reason}")
-              sys.exit(1)
-
-          print("Notebook JSON validation passed.")
-          PY
-
-  push_to_mirror:
-    name: Push to Mirror
-    runs-on: ubuntu-latest
-    needs: lint_and_sanity
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: tardis_production
-    env:
-      MIRROR_SSH_URL: git@github.com:EpitechPGE1-2025/G-AIA-210-NCE-2-1-tardis-1.git
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Prepare SSH and mirror configuration
-        shell: bash
-        env:
-          PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
+      - name: Setup SSH
         run: |
-          set -euo pipefail
-
-          if [[ -z "${MIRROR_SSH_URL:-}" ]]; then
-            echo "::error::MIRROR_SSH_URL is empty."
-            exit 1
-          fi
-
-          if [[ -z "${PRIVATE_SSH_KEY:-}" ]]; then
-            echo "::error::PRIVATE_SSH_KEY secret is missing."
-            exit 1
-          fi
-
           mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-          # Try common secret encodings and keep the first key accepted by ssh-keygen.
-          python - <<'PY'
-          import base64
-          import os
-          import pathlib
-          import re
-          import textwrap
-
-          def normalize_newlines(value: str) -> str:
-              return value.replace("\r\n", "\n").replace("\r", "\n")
-
-          def expand_escaped_newlines(value: str) -> str:
-              return value.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\r", "\n")
-
-          def reconstruct_flattened_key(value: str) -> str | None:
-              compact = " ".join(value.strip().split())
-              markers = [
-                  ("-----BEGIN OPENSSH PRIVATE KEY-----", "-----END OPENSSH PRIVATE KEY-----"),
-                  ("-----BEGIN RSA PRIVATE KEY-----", "-----END RSA PRIVATE KEY-----"),
-                  ("-----BEGIN EC PRIVATE KEY-----", "-----END EC PRIVATE KEY-----"),
-                  ("-----BEGIN PRIVATE KEY-----", "-----END PRIVATE KEY-----"),
-              ]
-              for begin, end in markers:
-                  if begin not in compact or end not in compact:
-                      continue
-                  start = compact.find(begin) + len(begin)
-                  finish = compact.find(end, start)
-                  body = re.sub(r"\s+", "", compact[start:finish])
-                  if not body:
-                      continue
-                  wrapped = "\n".join(textwrap.wrap(body, width=70))
-                  return f"{begin}\n{wrapped}\n{end}\n"
-              return None
-
-          def add_candidate(candidates: list[str], candidate: str | None) -> None:
-              if not candidate:
-                  return
-              candidate = normalize_newlines(candidate)
-              if not candidate.endswith("\n"):
-                  candidate += "\n"
-              if candidate not in candidates:
-                  candidates.append(candidate)
-
-          raw = os.environ["PRIVATE_SSH_KEY"].strip().strip('"').strip("'")
-          candidates = []
-
-          add_candidate(candidates, raw)
-          add_candidate(candidates, expand_escaped_newlines(raw))
-          add_candidate(candidates, reconstruct_flattened_key(raw))
-
-          try:
-              decoded_bytes = base64.b64decode(re.sub(r"\s+", "", raw), validate=False)
-              decoded = decoded_bytes.decode("utf-8")
-          except Exception:
-              decoded = None
-
-          if decoded:
-              add_candidate(candidates, decoded)
-              add_candidate(candidates, expand_escaped_newlines(decoded))
-              add_candidate(candidates, reconstruct_flattened_key(decoded))
-
-          ssh_dir = pathlib.Path.home() / ".ssh"
-          for index, content in enumerate(candidates, start=1):
-              candidate_path = ssh_dir / f"id_mirror_candidate_{index}"
-              candidate_path.write_text(content, encoding="utf-8")
-              candidate_path.chmod(0o600)
-
-          # Print only metadata, never key content.
-          token = raw.split(maxsplit=1)[0] if raw else ""
-          if token.startswith("ssh-"):
-              print("Detected public-key prefix in PRIVATE_SSH_KEY; expected a private key block.")
-          print(f"Prepared {len(candidates)} SSH key candidate(s).")
-          PY
-
-          valid_key=""
-          last_error=""
-          for candidate in ~/.ssh/id_mirror_candidate_*; do
-            if ssh-keygen -y -f "$candidate" >/dev/null 2>~/.ssh/last_ssh_key_error; then
-              valid_key="$candidate"
-              break
-            else
-              last_error="$(tr '\n' ' ' < ~/.ssh/last_ssh_key_error | sed 's/[[:space:]]\+/ /g')"
-            fi
-          done
-
-          if [[ -z "$valid_key" ]]; then
-            echo "::error::No valid SSH private key could be built from PRIVATE_SSH_KEY. Last ssh-keygen error: ${last_error:-unknown}."
-            echo "::error::Expected PRIVATE_SSH_KEY to contain the full private key (BEGIN ... PRIVATE KEY), not the public key."
-            exit 1
-          fi
-
-          cp "$valid_key" ~/.ssh/id_mirror
-          chmod 600 ~/.ssh/id_mirror
+          echo "${{ secrets.MIRROR_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
 
-      - name: Mirror all refs
-        shell: bash
-        env:
-          GIT_SSH_COMMAND: ssh -i ~/.ssh/id_mirror -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
+      - name: Test SSH connection
         run: |
-          set -euo pipefail
+          ssh -T git@github.com || true
 
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git checkout --detach
-
-          # Ensure all branch and tag refs are present locally before mirroring.
-          git fetch --prune origin '+refs/heads/*:refs/heads/*'
-          git fetch --prune origin '+refs/tags/*:refs/tags/*'
-
-          git remote add mirror "$MIRROR_SSH_URL"
-          git push --mirror mirror
+      - name: Push mirror
+        run: |
+          git push --mirror git@github.com:EpitechPGE1-2025/G-AIA-210-NCE-2-1-tardis-1.git
