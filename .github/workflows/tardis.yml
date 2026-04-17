@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  quality:
-    runs-on: ubuntu-latest
+  check-ruff-formatter:
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6
 
@@ -40,9 +40,9 @@ jobs:
           done
 
   mirror:
-    needs: quality
+    needs: check-ruff-formatter
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6
         with:
