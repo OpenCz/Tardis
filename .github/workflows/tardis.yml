@@ -7,7 +7,8 @@ on:
 
 jobs:
   check-ruff-formatter:
-    runs-on: self-hosted
+    if: github.repository == 'OpenCz/Tardis'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
@@ -41,8 +42,8 @@ jobs:
 
   mirror:
     needs: check-ruff-formatter
-    if: github.event_name != 'pull_request'
-    runs-on: self-hosted
+    if: github.event_name != 'pull_request' && github.repository == 'OpenCz/Tardis'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
