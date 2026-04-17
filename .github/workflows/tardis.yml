@@ -1,11 +1,47 @@
-name: Mirror Test
+name: CI and Mirror
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install quality tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+
+      - name: Ruff format check
+        run: |
+          ruff format --check dashboard
+
+      - name: Ruff lint check
+        run: |
+          ruff check dashboard
+
+      - name: Python syntax check
+        run: |
+          python -m compileall dashboard
+
+      - name: Validate notebook JSON
+        run: |
+          for nb in notebooks/*.ipynb; do
+            python -m json.tool "$nb" > /dev/null
+          done
+
   mirror:
+    needs: quality
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
