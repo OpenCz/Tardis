@@ -24,15 +24,15 @@ jobs:
 
       - name: Ruff format check
         run: |
-          ruff format --check dashboard
+          ruff format --check scripts
 
       - name: Ruff lint check
         run: |
-          ruff check dashboard
+          ruff check scripts
 
       - name: Python syntax check
         run: |
-          python -m compileall dashboard
+          python -m compileall scripts
 
       - name: Validate notebook JSON
         run: |
