@@ -36,7 +36,7 @@ jobs:
 
       - name: Validate notebook JSON
         run: |
-          for nb in notebooks/*.ipynb; do
+          for nb in *.ipynb; do
             python -m json.tool "$nb" > /dev/null
           done
 
