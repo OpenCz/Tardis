@@ -24,15 +24,15 @@ jobs:
 
       - name: Ruff format check
         run: |
-          ruff format --check scripts
+          ruff format --check tardis_dashboard.py
 
       - name: Ruff lint check
         run: |
-          ruff check scripts
+          ruff check tardis_dashboard.py
 
       - name: Python syntax check
         run: |
-          python -m compileall scripts
+          python -m compileall tardis_dashboard.py
 
       - name: Validate notebook JSON
         run: |
