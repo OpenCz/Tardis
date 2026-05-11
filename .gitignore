@@ -2,3 +2,7 @@
 data/
 .claude
 .env
+__pycache__
+*.csv
+*.md
+.vscode
