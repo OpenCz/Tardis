@@ -6,10 +6,10 @@ from scripts.features import (
     add_time_features,
 )
 from scripts.loading import load_data
-from scripts.pipeline import run_pipeline
+from scripts.pipeline import Pipeline
 
 __all__ = [
-    "run_pipeline",
+    "Pipeline",
     "load_data",
     "add_time_features",
     "add_season",
