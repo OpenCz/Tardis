@@ -1,8 +1,7 @@
 *.idea
-data/
 .claude
 .venv
 __pycache__
-*.csv
 *.md
 .vscode
+*.csv

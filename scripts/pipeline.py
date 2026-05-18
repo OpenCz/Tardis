@@ -8,8 +8,8 @@ class Pipeline:
     def __init__(
         self,
         data_path: str,
-        output_path: str = "cleaned_dataset.csv",
-        report_path: str = "cleaning_report.csv",
+        output_path: str = "data/proessed/trains/cleaned_dataset.csv",
+        report_path: str = "data/proessed/audit/cleaning_report.csv",
         station_threshold: int = 80,
     ):
         self.data_path = data_path
