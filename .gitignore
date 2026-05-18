@@ -1,7 +1,7 @@
 *.idea
 data/
 .claude
-.env
+.venv
 __pycache__
 *.csv
 *.md
