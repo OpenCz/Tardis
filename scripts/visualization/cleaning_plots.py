@@ -67,11 +67,19 @@ def plot_station_clustering(
 ) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
-    axes[0].pie(
-        [n_merged, nclusters - n_merged],
-        labels=["Stations with variants", "Unique stations"],
-        autopct="%1.1f%%",
-    )
+    n_unique = nclusters - n_merged
+    if n_merged == 0:
+        axes[0].text(0.5, 0.5, "No variants merged\n(all stations already unique)",
+                     ha="center", va="center", fontsize=12, transform=axes[0].transAxes)
+    elif n_unique == 0:
+        axes[0].text(0.5, 0.5, "All station clusters\nhave merged variants",
+                     ha="center", va="center", fontsize=12, transform=axes[0].transAxes)
+    else:
+        axes[0].pie(
+            [n_merged, n_unique],
+            labels=["Stations with variants", "Unique stations"],
+            autopct="%1.1f%%",
+        )
     axes[0].set_title("Stations merged vs unique")
 
     cluster_sizes = {
@@ -79,7 +87,11 @@ def plot_station_clustering(
         for canon, variants in clusters.items()
         if len(variants) > 1
     }
-    pd.Series(cluster_sizes).sort_values().plot(kind="barh", ax=axes[1])
+    if cluster_sizes:
+        pd.Series(cluster_sizes).sort_values().plot(kind="barh", ax=axes[1])
+    else:
+        axes[1].text(0.5, 0.5, "No merged clusters", ha="center", va="center",
+                     fontsize=12, transform=axes[1].transAxes)
     axes[1].set_title("Variants merged per canonical station")
     axes[1].set_xlabel("Number of variants")
 
@@ -160,5 +172,59 @@ def plot_validity_checks(checks: dict[str, int]) -> None:
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["FAIL", "PASS"])
     ax.set_title("Validity checks — pipeline invariants")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_comp_null_overview(comp_df: pd.DataFrame) -> None:
+    null_counts = comp_df.isnull().sum()
+    total_nulls = int(null_counts.sum())
+    nb_rows, nb_cols = comp_df.shape
+    nb_slots = nb_rows * nb_cols
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    axes[0].pie(
+        [total_nulls, nb_slots - total_nulls],
+        labels=["Null", "Healthy slots"],
+        autopct="%1.1f%%",
+    )
+    axes[0].set_title("Complementary dataset — NaN global")
+
+    null_nonzero = null_counts[null_counts > 0]
+    if null_nonzero.empty:
+        axes[1].text(0.5, 0.5, "No null values found", ha="center", va="center", fontsize=14,
+                     transform=axes[1].transAxes)
+        axes[1].set_title("NaN per column")
+    else:
+        null_nonzero.sort_values().plot(kind="barh", ax=axes[1])
+        axes[1].set_title("NaN per column")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_comp_segment_distribution(comp_df: pd.DataFrame) -> None:
+    if "Segment(s) DRG" not in comp_df.columns:
+        return
+    # Simplify multi-value segments to their first letter for grouping
+    seg = comp_df["Segment(s) DRG"].str.split(";").str[0]
+    seg_counts = seg.value_counts().sort_index()
+    labels = {"A": "A — Grande vitesse (TGV)", "B": "B — Intercités", "C": "C — Réseau local"}
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    axes[0].pie(
+        seg_counts.values,
+        labels=[labels.get(k, k) for k in seg_counts.index],
+        autopct="%1.1f%%",
+    )
+    axes[0].set_title("Station distribution by segment type")
+    bars = axes[1].bar([labels.get(k, k) for k in seg_counts.index], seg_counts.values,
+                       color=["gold", "steelblue", "mediumseagreen"])
+    for bar, val in zip(bars, seg_counts.values):
+        axes[1].text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 5,
+                     str(val), ha="center", fontsize=10)
+    axes[1].set_title("Station count by segment")
+    axes[1].set_ylabel("Number of stations")
     plt.tight_layout()
     plt.show()
