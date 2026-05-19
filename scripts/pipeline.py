@@ -35,7 +35,7 @@ class Pipeline:
         self._audit_quality()
         self.report.record_final_state(self.df, original_rows=self.original.shape[0])
         self.report.export(self.report_path)
-        return self.df, self.report
+        return self.df, self.report, self.complementary_data, self.complementary_report
 
     def _load(self):
         self.df, self.original = loading.load_data(self.data_path)
@@ -54,9 +54,9 @@ class Pipeline:
         self.complementary_report.record_duplicates(nb_complement_dup)
 
         self.df, crit_dropped = cleaning.drop_critical_nan(self.df)
-        self.complementary_data, crit_comp_droped = cleaning.drop_critical_comp_nan(self.complementary_data)
+        self.complementary_data, crit_comp_dropped = cleaning.drop_critical_comp_nan(self.complementary_data)
         self.report.record_critical_nan(crit_dropped)
-        self.complementary_report.record_critical_nan(crit_comp_droped)
+        self.complementary_report.record_critical_nan(crit_comp_dropped)
 
         self.df = cleaning.parse_dates(self.df)
         self.df = cleaning.convert_numerics(self.df)
