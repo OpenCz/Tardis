@@ -4,4 +4,6 @@
 __pycache__
 *.md
 .vscode
-*.csv
+data/
+**/__pycache__/
+*.pyc
