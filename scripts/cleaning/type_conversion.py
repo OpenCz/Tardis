@@ -1,7 +1,8 @@
 import pandas as pd
 
-_TEXT_COLS = ["Date", "Service", "Departure station", "Arrival station"]
+_TEXT_COLS = ["Date", "Service", "Departure station", "Arrival station", "Nom_Gare", "Trigramme", "Segment(s) DRG", "Id_Gare"]
 
+_STR_COLS = ["Service", "Departure station", "Arrival station", "Nom_Gare", "Trigramme", "Segment(s) DRG", "Id_Gare"]
 
 def parse_dates(df: pd.DataFrame, col: str = "Date") -> pd.DataFrame:
     df[col] = pd.to_datetime(df[col], format="mixed")
@@ -34,7 +35,7 @@ def cast_string_columns(
     df: pd.DataFrame, str_cols: list[str] | None = None
 ) -> pd.DataFrame:
     if str_cols is None:
-        str_cols = ["Service", "Departure station", "Arrival station"]
+        str_cols = _STR_COLS
     df[str_cols] = df[str_cols].astype("string")
     print("Dtypes after cast:")
     print(df[str_cols].dtypes.to_string())
