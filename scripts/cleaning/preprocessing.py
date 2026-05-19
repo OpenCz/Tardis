@@ -8,6 +8,11 @@ CRITICAL_COLS = [
     "Number of scheduled trains",
 ]
 
+CRITICAL_COMP_COLS = [
+    "Nom_Gare",
+    "Position géographique"
+]
+
 
 def drop_comment_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     comment_cols = df.filter(regex="comments$").columns.tolist()
@@ -24,6 +29,11 @@ def deduplicate(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     else:
         print("No duplicates found.")
     return df, int(nb_dup)
+
+def drop_critical_comp_nan(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    before = len(df)
+    df = df.dropna(subset=CRITICAL_COMP_COLS)
+    return df, before - len(df)
 
 
 def drop_critical_nan(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
