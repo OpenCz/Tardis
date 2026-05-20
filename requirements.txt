@@ -9,3 +9,4 @@ ruff>=0.9.7
 joblib>=1.4.2
 ipykernel>=6.28.0
 notebook>=6.5.3
+huggingface_hub>=1.0.0
