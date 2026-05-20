@@ -11,7 +11,9 @@ from scripts.cleaning.preprocessing import (
     deduplicate,
     drop_comment_columns,
     drop_critical_nan,
+    CRITICAL_COMP_COLS,
 )
+from scripts.cleaning.preprocessing import drop_critical_comp_nan
 from scripts.cleaning.station_clustering import StationClusterer
 from scripts.cleaning.type_conversion import (
     cast_string_columns,
@@ -21,9 +23,11 @@ from scripts.cleaning.type_conversion import (
 
 __all__ = [
     "CRITICAL_COLS",
+    "CRITICAL_COMP_COLS",
     "drop_comment_columns",
     "deduplicate",
     "drop_critical_nan",
+    "drop_critical_comp_nan",
     "parse_dates",
     "convert_numerics",
     "cast_string_columns",
