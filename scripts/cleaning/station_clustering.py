@@ -107,7 +107,7 @@ class StationClusterer:
 
     @staticmethod
     def _detect_station_columns(df: pd.DataFrame) -> list[str]:
-        keywords = ("station", "departure", "arrival", "gare", "origine", "destination")
+        keywords = ("station", "departure", "arrival", "gare", "origine", "destination", "nom_gare", "gare")
         station_columns = []
         for col in df.columns:
             if not any(kw in col.lower() for kw in keywords):
