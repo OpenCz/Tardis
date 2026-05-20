@@ -11,9 +11,7 @@ _COL_N_ARR = "Number of trains delayed at arrival"
 _COL_SCHEDULED = "Number of scheduled trains"
 
 
-def recover_departure_delay(
-    df: pd.DataFrame,
-) -> tuple[pd.DataFrame, int, int]:
+def recover_departure_delay(df: pd.DataFrame,) -> tuple[pd.DataFrame, int, int]:
     mask = (
         df[_COL_DEP_LATE].isna()
         & df[_COL_DEP_ALL].notna()
