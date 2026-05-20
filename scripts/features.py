@@ -50,7 +50,7 @@ def add_cancellation_rate(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_punctuality_rate(df: pd.DataFrame) -> pd.DataFrame:
     df["punctuality_rate"] = 1 - (
-        df["Number of trains delayed at arrival"] / df[_COL_SCHEDULED]
+        df["Number of trains delayed at arrival"] / df[_COL_SCHEDULED].replace(0, float("nan"))
     )
     print(
         f'punctuality_rate — min: {df["punctuality_rate"].min():.4f}'
