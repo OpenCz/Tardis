@@ -22,14 +22,15 @@ DEFAULT_THRESHOLD = 80
 
 
 class StationClusterer:
-    def __init__(self, threshold: int = DEFAULT_THRESHOLD):
+    def __init__(self, threshold: int = DEFAULT_THRESHOLD, unique_ratio_threshold: float = 0.1):
         self.threshold = threshold
+        self.unique_ratio_threshold = unique_ratio_threshold
         self.clusters: dict[str, list[str]] = {}
 
     def fit_transform(
         self, df: pd.DataFrame
     ) -> tuple[pd.DataFrame, list[str], dict]:
-        station_columns = self._detect_station_columns(df)
+        station_columns = self._detect_station_columns(df, self.unique_ratio_threshold)
         print(f"Station-like columns detected: {station_columns}")
 
         all_values: list[str] = []
@@ -106,7 +107,7 @@ class StationClusterer:
                     print(f"    {prefix}{v!r}")
 
     @staticmethod
-    def _detect_station_columns(df: pd.DataFrame) -> list[str]:
+    def _detect_station_columns(df: pd.DataFrame, unique_ratio_threshold: float = 0.1) -> list[str]:
         keywords = ("station", "departure", "arrival", "gare", "origine", "destination", "nom_gare", "gare")
         station_columns = []
         for col in df.columns:
@@ -125,7 +126,7 @@ class StationClusterer:
             if (
                 avg_len < 50
                 and digit_ratio < 0.05
-                and unique_ratio < 0.1
+                and unique_ratio < unique_ratio_threshold
                 and df[col].nunique() >= 5
             ):
                 station_columns.append(col)

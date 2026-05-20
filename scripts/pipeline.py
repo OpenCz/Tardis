@@ -2,6 +2,7 @@ import scripts.audit as audit
 import scripts.cleaning as cleaning
 import scripts.features as features
 import scripts.loading as loading
+import scripts.merging as merging
 
 
 class Pipeline:
@@ -31,6 +32,7 @@ class Pipeline:
         self._clean()
         self._engineer_features()
         self._fix_consistency()
+        self.merge_datasets()
         self._export()
         self._audit_quality()
         self.report.record_final_state(self.df, original_rows=self.original.shape[0])
@@ -106,6 +108,9 @@ class Pipeline:
         self.df, hier_fixed = cleaning.fix_delay_hierarchy(self.df)
         self.df = cleaning.recompute_rates(self.df)
         self.report.record_corrections(neg_fixed, overflow_fixed, hier_fixed)
+
+    def merge_datasets(self):
+        self.df = merging.merge_trains(self.df, self.complementary_data)
 
     def _export(self):
         self.df = self.df.reset_index(drop=True)
