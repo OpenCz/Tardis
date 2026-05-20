@@ -111,6 +111,82 @@ def plot_cancellation_by_service(df: pd.DataFrame) -> None:
     plt.show()
 
 
+def plot_delays_by_year(df: pd.DataFrame) -> None:
+    yearly = (
+        df.groupby("year")["Average delay of all trains at arrival"]
+        .mean()
+        .sort_index()
+    )
+    fig, ax = plt.subplots(figsize=(11, 5))
+    bars = ax.bar(yearly.index.astype(str), yearly.values, color="steelblue")
+    ax.axhline(yearly.mean(), color="red", linestyle="--", label=f"Overall mean ({yearly.mean():.1f} min)")
+    for bar, val in zip(bars, yearly.values):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.1,
+                f"{val:.1f}", ha="center", fontsize=9)
+    ax.set_title("Average arrival delay by year")
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Average delay (minutes)")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_top_delay_periods(df: pd.DataFrame, n: int = 12) -> None:
+    monthly = (
+        df.groupby(df["Date"].dt.to_period("M"))["Average delay of all trains at arrival"]
+        .mean()
+    )
+    top = monthly.nlargest(n).sort_values(ascending=True)
+    top.index = top.index.astype(str)
+    fig, ax = plt.subplots(figsize=(11, 6))
+    bars = ax.barh(top.index, top.values, color="coral")
+    for bar, val in zip(bars, top.values):
+        ax.text(bar.get_width() + 0.05, bar.get_y() + bar.get_height() / 2,
+                f"{val:.1f} min", va="center", fontsize=9)
+    ax.set_title(f"Top {n} months with highest average arrival delay")
+    ax.set_xlabel("Average delay (minutes)")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_delay_heatmap_year_month(df: pd.DataFrame) -> None:
+    pivot = df.pivot_table(
+        values="Average delay of all trains at arrival",
+        index="year",
+        columns="month",
+        aggfunc="mean",
+    )
+    month_labels = {
+        1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
+        7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec",
+    }
+    pivot.columns = [month_labels.get(c, str(c)) for c in pivot.columns]
+    fig, ax = plt.subplots(figsize=(14, 6))
+    sns.heatmap(pivot, annot=True, fmt=".1f", cmap="YlOrRd", ax=ax, linewidths=0.5)
+    ax.set_title("Average arrival delay (minutes) — Year × Month")
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Year")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_top_delay_routes(df: pd.DataFrame, n: int = 10) -> None:
+    df_r = df.copy()
+    df_r["route"] = df_r["Departure station"] + " → " + df_r["Arrival station"]
+    top_routes = (
+        df_r.groupby("route")["Average delay of all trains at arrival"]
+        .mean()
+        .sort_values(ascending=False)
+        .head(n)
+    )
+    fig, ax = plt.subplots(figsize=(12, 6))
+    top_routes.sort_values().plot(kind="barh", ax=ax, color="salmon")
+    ax.set_title(f"Top {n} routes by average arrival delay")
+    ax.set_xlabel("Average delay (minutes)")
+    plt.tight_layout()
+    plt.show()
+
+
 def run_all_eda(df: pd.DataFrame) -> None:
     plot_delay_distribution(df)
     plot_seasonal_delay(df)
