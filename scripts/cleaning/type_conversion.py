@@ -1,8 +1,8 @@
 import pandas as pd
 
-_TEXT_COLS = ["Date", "Service", "Departure station", "Arrival station", "Nom_Gare", "Trigramme", "Segment(s) DRG", "Id_Gare"]
+_TEXT_COLS = ["Date", "Service", "Departure station", "Arrival station", "Nom_Gare", "Trigramme", "Segment(s) DRG", "Id_Gare", "Code_UIC", "Position géographique"]
 
-_STR_COLS = ["Service", "Departure station", "Arrival station", "Nom_Gare", "Trigramme", "Segment(s) DRG", "Id_Gare"]
+_STR_COLS = ["Service", "Departure station", "Arrival station", "Nom_Gare", "Trigramme", "Segment(s) DRG", "Id_Gare", "Code_UIC", "Position géographique"]
 
 def parse_dates(df: pd.DataFrame, col: str = "Date") -> pd.DataFrame:
     df[col] = pd.to_datetime(df[col], format="mixed")
@@ -39,6 +39,9 @@ def cast_string_columns(
         str_cols = [col for col in str_cols if col in df.columns]
     if str_cols:
         df[str_cols] = df[str_cols].astype("string")
+        for col in ("Code_UIC", "Segment(s) DRG"):
+            if col in df.columns:
+                df[col] = df[col].str.split(";").str[0].str.strip().astype("string")
         print("Dtypes after cast:")
         print(df[str_cols].dtypes.to_string())
     return df
