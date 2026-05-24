@@ -1,4 +1,4 @@
-from scripts.visualization.cleaning_plots import (
+from scripts.trains.visualization.cleaning_plots import (
     plot_algebraic_recovery,
     plot_corrections,
     plot_critical_nan_drop,
@@ -10,7 +10,7 @@ from scripts.visualization.cleaning_plots import (
     plot_station_clustering,
     plot_validity_checks,
 )
-from scripts.visualization.eda_plots import (
+from scripts.trains.visualization.eda_plots import (
     plot_cancellation_by_service,
     plot_correlation_matrix,
     plot_delay_categories,

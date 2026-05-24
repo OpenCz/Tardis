@@ -1,21 +1,21 @@
-from scripts.cleaning.corrections import (
+from scripts.trains.cleaning.corrections import (
     fix_count_overflow,
     fix_delay_hierarchy,
     fix_negative_counts,
     recompute_rates,
 )
-from scripts.cleaning.nan_recovery import recover_arrival_delay, recover_departure_delay
-from scripts.cleaning.normalization import normalize_labels
-from scripts.cleaning.preprocessing import (
+from scripts.trains.cleaning.nan_recovery import recover_arrival_delay, recover_departure_delay
+from scripts.trains.cleaning.normalization import normalize_labels
+from scripts.trains.cleaning.preprocessing import (
     CRITICAL_COLS,
     deduplicate,
     drop_comment_columns,
     drop_critical_nan,
     CRITICAL_COMP_COLS,
 )
-from scripts.cleaning.preprocessing import drop_critical_comp_nan
-from scripts.cleaning.station_clustering import StationClusterer
-from scripts.cleaning.type_conversion import (
+from scripts.trains.cleaning.preprocessing import drop_critical_comp_nan
+from scripts.trains.cleaning.station_clustering import StationClusterer
+from scripts.trains.cleaning.type_conversion import (
     cast_string_columns,
     convert_numerics,
     parse_dates,
