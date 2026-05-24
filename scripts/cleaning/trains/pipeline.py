@@ -1,17 +1,13 @@
-import scripts.trains.audit as audit
-import scripts.trains.cleaning as cleaning
-import scripts.trains.features as features
-import scripts.trains.loading as loading
-import scripts.trains.merging as merging
+from . import audit, cleaning, features, loading, merging
 
 
 class Pipeline:
     def __init__(
         self,
         data_path: str,
-        output_path: str = "data/processed/trains/cleaned_dataset.csv",
-        report_path: str = "data/processed/audit/cleaning_report.csv",
-        complementary_data_path: str = "data/raw/trains/gares-de-voyageurs.csv",
+        complementary_data_path: str,
+        output_path: str = "../../../data/processed/trains/cleaned_dataset.csv",
+        report_path: str = "../../../data/processed/audit/cleaning_report.csv",
         station_threshold: int = 80,
     ):
         self.data_path = data_path

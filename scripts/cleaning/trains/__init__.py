@@ -1,4 +1,4 @@
-from . import cleaning, audit, merging, visualization
+from . import cleaning, audit, merging, visualization, features, loading, pipeline
 from .features import (
     add_cancellation_rate,
     add_delay_category,
@@ -14,6 +14,9 @@ __all__ = [
     "audit",
     "merging",
     "visualization",
+    "features",
+    "loading",
+    "pipeline",
     "Pipeline",
     "load_data",
     "add_time_features",

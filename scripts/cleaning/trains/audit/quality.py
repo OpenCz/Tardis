@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from scripts.trains.audit.tracker import AuditReport
+from .tracker import AuditReport
 
 _DEFAULT_DIST_COLS = [
     "Number of scheduled trains",

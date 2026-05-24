@@ -1,22 +1,23 @@
-from . import trains, meteo
+from . import cleaning
 
-cleaning = trains.cleaning
-audit = trains.audit
-merging = trains.merging
-visualization = trains.visualization
-features = trains.features
-loading = trains.loading
-pipeline = trains.pipeline
+trains = cleaning.trains
+meteo = cleaning.meteo
+audit = cleaning.audit
+merging = cleaning.merging
+visualization = cleaning.visualization
+features = cleaning.features
+loading = cleaning.loading
+pipeline = cleaning.pipeline
 
 __all__ = [
-    "trains",
-    "meteo",
-    "cleaning",
-    "audit",
-    "merging",
-    "visualization",
-    "features",
-    "loading",
-    "pipeline",
+	"cleaning",
+	"trains",
+	"meteo",
+	"audit",
+	"merging",
+	"visualization",
+	"features",
+	"loading",
+	"pipeline",
 ]
 
