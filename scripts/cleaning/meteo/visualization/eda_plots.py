@@ -171,9 +171,18 @@ def plot_correlation_matrix(df: pd.DataFrame) -> None:
     corr = df[cols].corr()
     mask = np.triu(np.ones_like(corr, dtype=bool), k=1)   # upper triangle only
     fig, ax = plt.subplots(figsize=(13, 9))
-    sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm",
-                vmin=-1, vmax=1, ax=ax, linewidths=0.5,
-                annot_kws={"size": 9})
+    sns.heatmap(
+        corr,
+        mask=mask,
+        annot=True,
+        fmt=".2f",
+        cmap="coolwarm",
+        vmin=-1,
+        vmax=1,
+        ax=ax,
+        linewidths=0.5,
+        annot_kws={"size": 9},
+    )
     ax.set_title("Correlation matrix — key meteorological features")
     plt.tight_layout()
     plt.show()
