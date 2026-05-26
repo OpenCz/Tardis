@@ -359,7 +359,7 @@ html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    df = pd.read_csv("cleaned_dataset.csv", parse_dates=["Date"])
+    df = pd.read_csv("data/processed/trains/cleaned_dataset.csv", parse_dates=["Date"])
     df["day_of_week"] = df["Date"].dt.dayofweek
     df["month"] = df["Date"].dt.month
     df["year"] = df["Date"].dt.year
@@ -538,7 +538,7 @@ with st.sidebar:
     st.markdown("## TARDIS")
     st.caption("Predicteur de retards TGV SNCF")
 
-    if st.button(t("lang_btn"), use_container_width=True):
+    if st.button(t("lang_btn"), width="stretch"):
         st.session_state.lang = "en" if st.session_state.lang == "fr" else "fr"
         st.rerun()
 
@@ -550,7 +550,7 @@ with st.sidebar:
         ("explore", t("nav_explore")),
         ("models", t("nav_models")),
     ]:
-        if st.button(lbl, key=f"nav_{pid}", use_container_width=True):
+        if st.button(lbl, key=f"nav_{pid}", width="stretch"):
             st.session_state.page = pid
             st.rerun()
 
@@ -630,7 +630,7 @@ if page == "predict":
             min_value=datetime.date(2018, 1, 1),
         )
 
-        if st.button(t("p_btn"), type="primary", use_container_width=True):
+        if st.button(t("p_btn"), type="primary", width="stretch"):
             result, approx = predict(dep, arr, date, pipeline, route_stats)
             st.session_state.prediction = {
                 "dep": dep,
@@ -682,7 +682,7 @@ if page == "predict":
                 st.caption(t("p_approx"))
 
             st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-            st.plotly_chart(make_gauge(v), use_container_width=True)
+            st.plotly_chart(make_gauge(v), width="stretch")
 
             hist = df[
                 (df["Departure station"] == dep_) & (df["Arrival station"] == arr_)
@@ -756,7 +756,7 @@ if page == "predict":
                     xaxis_title=t("e_delay_ax"),
                     yaxis_title=t("e_count_ax"),
                 )
-                st.plotly_chart(chart_style(fig, 300), use_container_width=True)
+                st.plotly_chart(chart_style(fig, 300), width="stretch")
 
         with right2:
             st.markdown(
@@ -800,7 +800,7 @@ if page == "predict":
                     xaxis_title="",
                     yaxis_title=t("e_delay_ax"),
                 )
-                st.plotly_chart(chart_style(fig2, 300), use_container_width=True)
+                st.plotly_chart(chart_style(fig2, 300), width="stretch")
 
 
 elif page == "explore":
@@ -851,7 +851,7 @@ elif page == "explore":
             xaxis_title=t("e_delay_ax"),
             yaxis_title=t("e_count_ax"),
         )
-        st.plotly_chart(chart_style(fig), use_container_width=True)
+        st.plotly_chart(chart_style(fig), width="stretch")
 
     with c2:
         st.markdown(f'<p class="stitle">{t("e_trend")}</p>', unsafe_allow_html=True)
@@ -873,7 +873,7 @@ elif page == "explore":
             annotation_font_color="#94a3b8",
         )
         fig2.update_layout(xaxis_title="", yaxis_title=t("e_delay_ax"))
-        st.plotly_chart(chart_style(fig2), use_container_width=True)
+        st.plotly_chart(chart_style(fig2), width="stretch")
 
     c3, c4 = st.columns(2, gap="medium")
     with c3:
@@ -900,7 +900,7 @@ elif page == "explore":
             yaxis=dict(autorange="reversed"),
             xaxis_title=t("e_delay_ax"),
         )
-        st.plotly_chart(chart_style(fig3, 420), use_container_width=True)
+        st.plotly_chart(chart_style(fig3, 420), width="stretch")
 
     with c4:
         st.markdown(f'<p class="stitle">{t("e_heatmap")}</p>', unsafe_allow_html=True)
@@ -915,7 +915,7 @@ elif page == "explore":
             color_continuous_scale="RdYlGn_r",
             labels={"color": t("e_delay_ax")},
         )
-        st.plotly_chart(chart_style(fig4, 420), use_container_width=True)
+        st.plotly_chart(chart_style(fig4, 420), width="stretch")
 
     st.markdown("<hr class='sep'>", unsafe_allow_html=True)
     st.markdown(f'<p class="stitle">{t("e_export")}</p>', unsafe_allow_html=True)
@@ -926,7 +926,7 @@ elif page == "explore":
         data=buf.getvalue(),
         file_name="tardis_export.csv",
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
     )
 
 
@@ -1020,7 +1020,7 @@ elif page == "models":
             fig_imp.update_layout(
                 xaxis_title="Importance relative", yaxis_title="", showlegend=False
             )
-            st.plotly_chart(chart_style(fig_imp, 500), use_container_width=True)
+            st.plotly_chart(chart_style(fig_imp, 500), width="stretch")
         else:
             st.info(t("m_imp_na"))
 
@@ -1050,7 +1050,7 @@ elif page == "models":
                     .format({t("m_rmse"): "±{:.1f} min", t("m_r2"): "{:.1%}"})
                     .bar(subset=[t("m_rmse")], color="#fecaca", vmin=0)
                     .bar(subset=[t("m_r2")], color="#bbf7d0", vmin=0, vmax=1),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
                 best_row = perf.iloc[0]
