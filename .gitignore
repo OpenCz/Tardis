@@ -9,3 +9,8 @@ data/
 *.pyc
 *.csv
 .env
+
+# Modèles ML (trop lourds pour git — régénérer via le notebook)
+*.joblib
+models/
+!models/metadata.json
