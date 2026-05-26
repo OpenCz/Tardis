@@ -19,6 +19,34 @@ st.set_page_config(
 )
 
 TARGET = "Average delay of all trains at arrival"
+METEO_TARGET = "TM"
+METEO_FEATURES = [
+    "NUM_POSTE",
+    "NOM_USUEL",
+    "LAT",
+    "LON",
+    "ALTI",
+    "RR",
+    "TN",
+    "TX",
+    "TM",
+    "FFM",
+    "UM",
+    "INST",
+    "NEIG",
+    "BROU",
+    "ORAG",
+    "GRELE",
+    "VERGLAS",
+    "SOLNEIGE",
+    "GELEE",
+    "date",
+    "year",
+    "month",
+    "season",
+    "wind_category",
+    "precip_category",
+]
 SEASON_MAP = {
     1: "winter",
     2: "winter",
@@ -125,6 +153,7 @@ TR = {
         "nav_title": "Menu",
         "nav_predict": "Predire un retard",
         "nav_explore": "Voir les stats",
+        "nav_meteo": "Meteo",
         "nav_models": "Comment ca marche ?",
         "model_title": "Modele IA",
         "model_help": "Algorithme utilise pour la prediction",
@@ -184,12 +213,62 @@ TR = {
         "m_table_title": "Comparaison des modeles IA disponibles",
         "m_rmse": "Erreur moy. (min)",
         "m_r2": "Precision (R2)",
+        "w_title": "Meteo en chiffres",
+        "w_sub": "Donnees Meteo-France nettoyees, audit qualite et modeles meteorologiques.",
+        "w_tab_predict": "Predire",
+        "w_tab_data": "Donnees",
+        "w_tab_audit": "Audit",
+        "w_tab_models": "Modeles",
+        "w_filters": "Filtres meteo",
+        "w_station": "Stations meteo",
+        "w_records": "Observations",
+        "w_stations": "Stations",
+        "w_temp": "Temperature moyenne",
+        "w_rain": "Pluie moyenne",
+        "w_wind": "Vent moyen",
+        "w_temp_dist": "Distribution des temperatures",
+        "w_temp_trend": "Evolution mensuelle de la temperature",
+        "w_precip_season": "Precipitations par saison",
+        "w_events": "Phenomenes meteo par mois",
+        "w_map": "Carte des stations",
+        "w_audit_score": "Score de completude",
+        "w_audit_categories": "Audit par categorie",
+        "w_audit_completeness": "Completude par colonne",
+        "w_audit_table": "Rapport d'audit complet",
+        "w_model_table": "Comparaison des modeles meteo",
+        "w_model_missing": "Aucun modele meteo trouve. Lance `tardis_meteo_model.ipynb` pour generer `models/meteo/`.",
+        "w_export": "Exporter la meteo filtree",
+        "wp_title": "Predire la temperature",
+        "wp_sub": "Choisis une station et une date. Le modele estime la temperature moyenne journaliere.",
+        "wp_station": "Station meteo",
+        "wp_date": "Date",
+        "wp_model": "Modele meteo",
+        "wp_btn": "Calculer la meteo estimee",
+        "wp_result": "temperature moyenne estimee",
+        "wp_hist": "Moyenne historique station/mois",
+        "wp_diff": "Ecart a la normale",
+        "wp_context": "Contexte meteo estime",
+        "wp_context_help": "La pluie et le vent sont estimes automatiquement par les modeles meteo auxiliaires. Si un modele manque, le dashboard revient a la normale historique station/mois.",
+        "wp_rain": "Pluie estimee (mm)",
+        "wp_wind": "Vent estime (m/s)",
+        "wp_rain_cat": "Categorie pluie",
+        "wp_wind_cat": "Categorie vent",
+        "wp_source": "Source",
+        "wp_snow": "Neige",
+        "wp_fog": "Brouillard",
+        "wp_storm": "Orage",
+        "wp_frost": "Gelee",
+        "wp_events": "Probabilites d'evenements",
+        "wp_station_info": "Informations station",
+        "wp_placeholder": "Choisis une station et une date, puis clique sur le bouton.",
+        "wp_dist": "Historique des temperatures pour cette station et ce mois",
     },
     "en": {
         "lang_btn": "Francais",
         "nav_title": "Menu",
         "nav_predict": "Predict a delay",
         "nav_explore": "See stats",
+        "nav_meteo": "Weather",
         "nav_models": "How it works",
         "model_title": "AI model",
         "model_help": "Algorithm used for prediction",
@@ -249,6 +328,55 @@ TR = {
         "m_table_title": "Comparison of available AI models",
         "m_rmse": "Avg error (min)",
         "m_r2": "Accuracy (R2)",
+        "w_title": "Weather in numbers",
+        "w_sub": "Cleaned Meteo-France data, quality audit and weather models.",
+        "w_tab_predict": "Predict",
+        "w_tab_data": "Data",
+        "w_tab_audit": "Audit",
+        "w_tab_models": "Models",
+        "w_filters": "Weather filters",
+        "w_station": "Weather stations",
+        "w_records": "Observations",
+        "w_stations": "Stations",
+        "w_temp": "Mean temperature",
+        "w_rain": "Mean rainfall",
+        "w_wind": "Mean wind",
+        "w_temp_dist": "Temperature distribution",
+        "w_temp_trend": "Monthly temperature trend",
+        "w_precip_season": "Precipitation by season",
+        "w_events": "Weather events by month",
+        "w_map": "Station map",
+        "w_audit_score": "Completeness score",
+        "w_audit_categories": "Audit by category",
+        "w_audit_completeness": "Column completeness",
+        "w_audit_table": "Full audit report",
+        "w_model_table": "Weather model comparison",
+        "w_model_missing": "No weather model found. Run `tardis_meteo_model.ipynb` to generate `models/meteo/`.",
+        "w_export": "Export filtered weather",
+        "wp_title": "Predict temperature",
+        "wp_sub": "Pick a station and a date. The model estimates daily mean temperature.",
+        "wp_station": "Weather station",
+        "wp_date": "Date",
+        "wp_model": "Weather model",
+        "wp_btn": "Calculate estimated weather",
+        "wp_result": "estimated mean temperature",
+        "wp_hist": "Historical station/month average",
+        "wp_diff": "Difference vs normal",
+        "wp_context": "Estimated weather context",
+        "wp_context_help": "Rain and wind are estimated automatically by auxiliary weather models. If a model is missing, the dashboard falls back to station/month historical normals.",
+        "wp_rain": "Estimated rain (mm)",
+        "wp_wind": "Estimated wind (m/s)",
+        "wp_rain_cat": "Rain category",
+        "wp_wind_cat": "Wind category",
+        "wp_source": "Source",
+        "wp_snow": "Snow",
+        "wp_fog": "Fog",
+        "wp_storm": "Thunderstorm",
+        "wp_frost": "Frost",
+        "wp_events": "Event probabilities",
+        "wp_station_info": "Station information",
+        "wp_placeholder": "Pick a station and date, then click the button.",
+        "wp_dist": "Historical temperatures for this station and month",
     },
 }
 
@@ -368,6 +496,26 @@ def load_data() -> pd.DataFrame:
 
 
 @st.cache_data
+def load_meteo_data() -> pd.DataFrame:
+    path = "data/processed/meteo/cleaned_meteo_dataset.csv"
+    available = pd.read_csv(path, nrows=0).columns.tolist()
+    usecols = [col for col in METEO_FEATURES if col in available]
+    df = pd.read_csv(path, usecols=usecols, parse_dates=["date"], low_memory=False)
+    if "date" in df.columns:
+        df["day_of_week"] = df["date"].dt.dayofweek
+        df["day_of_year"] = df["date"].dt.dayofyear
+    return df
+
+
+@st.cache_data
+def load_meteo_audit() -> pd.DataFrame:
+    path = "data/processed/audit/cleaning_meteo_report.csv"
+    if not os.path.exists(path):
+        return pd.DataFrame(columns=["metric", "value", "category", "reason"])
+    return pd.read_csv(path)
+
+
+@st.cache_data
 def build_route_stats(df: pd.DataFrame) -> pd.DataFrame:
     return (
         df.groupby(["Departure station", "Arrival station"])[
@@ -408,12 +556,67 @@ def discover_models() -> dict:
     return catalog
 
 
+def discover_meteo_models() -> dict:
+    meta: dict = {}
+    meta_path = "models/meteo/metadata.json"
+    if os.path.exists(meta_path):
+        with open(meta_path) as f:
+            meta_raw = json.load(f)
+        meta = meta_raw.get("results", meta_raw)
+
+    catalog: dict = {}
+    for path in sorted(glob.glob("models/meteo/*.joblib")):
+        try:
+            art = joblib.load(path)
+            name = (
+                art.get("model_name", os.path.basename(path))
+                if isinstance(art, dict)
+                else os.path.basename(path)
+            )
+            catalog[name] = {"file": path, **meta.get(name, {})}
+        except Exception:
+            pass
+
+    if os.path.exists("meteo_model.joblib"):
+        try:
+            art = joblib.load("meteo_model.joblib")
+            name = (
+                art.get("model_name", "Modele meteo")
+                if isinstance(art, dict)
+                else "Modele meteo"
+            )
+            if name not in catalog:
+                catalog[name] = {"file": "meteo_model.joblib", **meta.get(name, {})}
+        except Exception:
+            pass
+    return catalog
+
+
+def discover_meteo_aux_models() -> dict:
+    catalog = {}
+    for name, path in {
+        "rain": "models/meteo_aux/rr_model.joblib",
+        "wind": "models/meteo_aux/ffm_model.joblib",
+    }.items():
+        if os.path.exists(path):
+            catalog[name] = path
+    return catalog
+
+
 @st.cache_resource
 def load_pipeline(model_file: str):
     art = joblib.load(model_file)
     if isinstance(art, dict):
         return art["pipeline"], art["model_name"]
     return art, type(art.named_steps["model"]).__name__
+
+
+@st.cache_resource
+def load_aux_pipeline(model_file: str):
+    art = joblib.load(model_file)
+    if isinstance(art, dict):
+        return art["pipeline"], art.get("target", "")
+    return art, ""
 
 
 @st.cache_data
@@ -470,6 +673,167 @@ def predict(dep: str, arr: str, date, pipeline, route_stats: pd.DataFrame):
         ]
     )
     return max(0.0, float(pipeline.predict(inp)[0])), approx
+
+
+def temp_info(v: float) -> tuple:
+    if v < 0:
+        return "Gel", "#2563eb", "#eff6ff", "Conditions froides, attention au gel."
+    if v < 10:
+        return "Frais", "#0891b2", "#ecfeff", "Temperature fraiche pour la saison."
+    if v < 25:
+        return "Doux", "#16a34a", "#f0fdf4", "Conditions plutot confortables."
+    if v < 32:
+        return "Chaud", "#f97316", "#fff7ed", "Journee chaude, surveille les pics."
+    return "Tres chaud", "#dc2626", "#fef2f2", "Risque de forte chaleur."
+
+
+def precip_category(rr: float) -> str:
+    if pd.isna(rr) or rr <= 0:
+        return "dry"
+    if rr < 2:
+        return "light"
+    if rr < 10:
+        return "moderate"
+    return "heavy"
+
+
+def wind_category(ffm: float) -> str:
+    if pd.isna(ffm):
+        return "calm"
+    if ffm < 2:
+        return "calm"
+    if ffm < 5:
+        return "breeze"
+    if ffm < 10:
+        return "windy"
+    return "storm"
+
+
+def finite_or_default(value, default: float = 0.0) -> float:
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return default
+    return value if np.isfinite(value) else default
+
+
+def station_month_normals(meteo_df: pd.DataFrame, station: str, month: int) -> pd.Series:
+    station_month = meteo_df[
+        (meteo_df["NOM_USUEL"] == station) & (meteo_df["month"] == month)
+    ]
+    if station_month.empty:
+        station_month = meteo_df[meteo_df["NOM_USUEL"] == station]
+    if station_month.empty:
+        station_month = meteo_df
+
+    numeric_cols = [
+        col
+        for col in ["LAT", "LON", "ALTI", "RR", "FFM", "NEIG", "BROU", "ORAG", "GRELE", "VERGLAS", "SOLNEIGE", "GELEE", "TM"]
+        if col in station_month.columns
+    ]
+    vals = station_month[numeric_cols].median(numeric_only=True)
+    vals["NUM_POSTE"] = station_month["NUM_POSTE"].mode().iloc[0]
+    vals["NOM_USUEL"] = station
+    return vals
+
+
+def station_month_slice(meteo_df: pd.DataFrame, station: str, month: int) -> pd.DataFrame:
+    station_month = meteo_df[
+        (meteo_df["NOM_USUEL"] == station) & (meteo_df["month"] == month)
+    ]
+    if station_month.empty:
+        station_month = meteo_df[meteo_df["NOM_USUEL"] == station]
+    if station_month.empty:
+        station_month = meteo_df
+    return station_month
+
+
+def estimate_weather_context(station: str, date, meteo_df: pd.DataFrame) -> dict:
+    normals = station_month_normals(meteo_df, station, date.month)
+    aux_catalog = discover_meteo_aux_models()
+    base_row = pd.DataFrame(
+        [
+            {
+                "NUM_POSTE": normals.get("NUM_POSTE"),
+                "NOM_USUEL": station,
+                "LAT": normals.get("LAT", np.nan),
+                "LON": normals.get("LON", np.nan),
+                "ALTI": normals.get("ALTI", np.nan),
+                "year": date.year,
+                "month": date.month,
+                "day_of_week": date.weekday(),
+                "day_of_year": pd.Timestamp(date).dayofyear,
+                "season": SEASON_MAP[date.month],
+            }
+        ]
+    )
+
+    rr = finite_or_default(normals.get("RR", 0))
+    ffm = finite_or_default(normals.get("FFM", 0))
+    sources = {"RR": "historique", "FFM": "historique"}
+
+    if "rain" in aux_catalog:
+        rain_pipe, _ = load_aux_pipeline(aux_catalog["rain"])
+        rr = max(0.0, float(rain_pipe.predict(base_row)[0]))
+        sources["RR"] = "IA"
+    if "wind" in aux_catalog:
+        wind_pipe, _ = load_aux_pipeline(aux_catalog["wind"])
+        ffm = max(0.0, float(wind_pipe.predict(base_row)[0]))
+        sources["FFM"] = "IA"
+
+    event_cols = ["NEIG", "BROU", "ORAG", "GRELE", "VERGLAS", "SOLNEIGE", "GELEE"]
+    station_month = station_month_slice(meteo_df, station, date.month)
+    event_probs = {
+        col: finite_or_default(station_month[col].mean(), 0.0)
+        for col in event_cols
+        if col in station_month.columns
+    }
+
+    return {
+        "RR": rr,
+        "FFM": ffm,
+        "precip_category": precip_category(rr),
+        "wind_category": wind_category(ffm),
+        "events": event_probs,
+        "sources": sources,
+        "normals": normals,
+        "base_row": base_row,
+    }
+
+
+def predict_weather(
+    station: str,
+    date,
+    pipeline,
+    meteo_df: pd.DataFrame,
+    context: dict | None = None,
+) -> tuple[float, pd.Series, pd.DataFrame, dict]:
+    context = context or estimate_weather_context(station, date, meteo_df)
+    normals = context["normals"]
+    rr = context["RR"]
+    ffm = context["FFM"]
+    row = {
+        "NUM_POSTE": normals.get("NUM_POSTE"),
+        "NOM_USUEL": station,
+        "LAT": normals.get("LAT", np.nan),
+        "LON": normals.get("LON", np.nan),
+        "ALTI": normals.get("ALTI", np.nan),
+        "year": date.year,
+        "month": date.month,
+        "day_of_week": date.weekday(),
+        "day_of_year": pd.Timestamp(date).dayofyear,
+        "RR": rr,
+        "FFM": ffm,
+        "season": SEASON_MAP[date.month],
+        "wind_category": context["wind_category"],
+        "precip_category": context["precip_category"],
+    }
+    for col in ["NEIG", "BROU", "ORAG", "GRELE", "VERGLAS", "SOLNEIGE", "GELEE"]:
+        row[col] = int(context["events"].get(col, 0) >= 0.5)
+
+    inp = pd.DataFrame([row])
+    pred = float(pipeline.predict(inp)[0])
+    return pred, normals, inp, context
 
 
 def chart_style(fig, height: int = 320):
@@ -548,6 +912,7 @@ with st.sidebar:
     for pid, lbl in [
         ("predict", t("nav_predict")),
         ("explore", t("nav_explore")),
+        ("meteo", t("nav_meteo")),
         ("models", t("nav_models")),
     ]:
         if st.button(lbl, key=f"nav_{pid}", width="stretch"):
@@ -928,6 +1293,550 @@ elif page == "explore":
         mime="text/csv",
         width="stretch",
     )
+
+
+elif page == "meteo":
+    meteo_df = load_meteo_data()
+    meteo_audit = load_meteo_audit()
+    meteo_catalog = discover_meteo_models()
+
+    st.markdown(
+        f'<div class="ph"><p class="ph-title">{t("w_title")}</p>'
+        f'<p class="ph-sub">{t("w_sub")}</p></div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(f'<p class="stitle">{t("w_filters")}</p>', unsafe_allow_html=True)
+    f1, f2, f3 = st.columns([1.4, 1, 1])
+    station_opts = sorted(meteo_df["NOM_USUEL"].dropna().unique())
+    default_weather_stations = station_opts[: min(12, len(station_opts))]
+    with f1:
+        weather_stations = st.multiselect(
+            t("w_station"),
+            station_opts,
+            default=default_weather_stations,
+        )
+    with f2:
+        wymin, wymax = int(meteo_df["year"].min()), int(meteo_df["year"].max())
+        weather_years = st.slider(
+            t("f_years"),
+            wymin,
+            wymax,
+            (max(wymin, wymax - 15), wymax),
+            key="meteo_years",
+        )
+    with f3:
+        weather_season_labels = st.multiselect(
+            t("f_seasons"),
+            list(SEASON_OPTS),
+            default=list(SEASON_OPTS),
+            key="meteo_seasons",
+        )
+
+    weather_seasons = [SEASON_OPTS[s] for s in weather_season_labels] or list(
+        SEASON_OPTS.values()
+    )
+    meteo_f = meteo_df[
+        meteo_df["NOM_USUEL"].isin(weather_stations or station_opts)
+        & meteo_df["year"].between(*weather_years)
+        & meteo_df["season"].isin(weather_seasons)
+    ]
+
+    tab_predict, tab_data, tab_audit, tab_models = st.tabs(
+        [t("w_tab_predict"), t("w_tab_data"), t("w_tab_audit"), t("w_tab_models")]
+    )
+
+    with tab_predict:
+        st.markdown(
+            f'<div class="ph"><p class="ph-title">{t("wp_title")}</p>'
+            f'<p class="ph-sub">{t("wp_sub")}</p></div>',
+            unsafe_allow_html=True,
+        )
+
+        if not meteo_catalog:
+            st.info(t("w_model_missing"))
+
+        p_col, r_col = st.columns([1, 1], gap="large")
+        meteo_model_names = list(meteo_catalog.keys())
+
+        with p_col:
+            pred_station_opts = sorted(
+                meteo_df.dropna(subset=["TM"])["NOM_USUEL"].dropna().unique()
+            ) or station_opts
+            pred_station = st.selectbox(
+                t("wp_station"),
+                pred_station_opts,
+                key="meteo_pred_station",
+            )
+            pred_date = st.date_input(
+                t("wp_date"),
+                value=datetime.date.today(),
+                min_value=datetime.date(1950, 1, 1),
+                key="meteo_pred_date",
+            )
+            pred_model = None
+            if meteo_model_names:
+                pred_model = st.selectbox(
+                    t("wp_model"),
+                    meteo_model_names,
+                    format_func=lambda n: (
+                        f"{n}  (RMSE {meteo_catalog[n]['RMSE']:.2f})"
+                        if "RMSE" in meteo_catalog[n]
+                        else n
+                    ),
+                    key="meteo_pred_model",
+                )
+            else:
+                st.caption("Modele utilise : normale historique station/mois")
+
+            normals = station_month_normals(meteo_df, pred_station, pred_date.month)
+            estimated_context = estimate_weather_context(pred_station, pred_date, meteo_df)
+            st.markdown(
+                f'<p class="stitle">{t("wp_context")}</p>',
+                unsafe_allow_html=True,
+            )
+            st.caption(t("wp_context_help"))
+
+            ctx_cols = st.columns(2)
+            ctx_cols[0].metric(
+                t("wp_rain"),
+                f"{estimated_context['RR']:.1f} mm",
+                help=f"{t('wp_source')} : {estimated_context['sources']['RR']}",
+            )
+            ctx_cols[1].metric(
+                t("wp_wind"),
+                f"{estimated_context['FFM']:.1f} m/s",
+                help=f"{t('wp_source')} : {estimated_context['sources']['FFM']}",
+            )
+            ctx_cols = st.columns(2)
+            ctx_cols[0].metric(t("wp_rain_cat"), estimated_context["precip_category"])
+            ctx_cols[1].metric(t("wp_wind_cat"), estimated_context["wind_category"])
+
+            station_info = pd.DataFrame(
+                [
+                    {
+                        "Station": pred_station,
+                        "Code": normals.get("NUM_POSTE"),
+                        "Latitude": finite_or_default(normals.get("LAT"), np.nan),
+                        "Longitude": finite_or_default(normals.get("LON"), np.nan),
+                        "Altitude": finite_or_default(normals.get("ALTI"), np.nan),
+                        "Saison": SEASON_MAP[pred_date.month],
+                    }
+                ]
+            )
+            st.dataframe(station_info, width="stretch", hide_index=True)
+
+            if st.button(t("wp_btn"), type="primary", width="stretch"):
+                if pred_model:
+                    weather_pipe, weather_model_name = load_pipeline(
+                        meteo_catalog[pred_model]["file"]
+                    )
+                    pred_temp, pred_normals, pred_input, pred_context = predict_weather(
+                        pred_station,
+                        pred_date,
+                        weather_pipe,
+                        meteo_df,
+                        estimated_context,
+                    )
+                else:
+                    weather_model_name = "Normale historique"
+                    pred_normals = normals
+                    pred_temp = finite_or_default(normals.get("TM", np.nan), np.nan)
+                    pred_input = pd.DataFrame()
+                    pred_context = estimated_context
+
+                st.session_state.weather_prediction = {
+                    "station": pred_station,
+                    "date": pred_date,
+                    "result": pred_temp,
+                    "model": weather_model_name,
+                    "normal": float(pred_normals.get("TM", np.nan)),
+                    "input": pred_input,
+                    "context": pred_context,
+                }
+
+        with r_col:
+            pred = st.session_state.get("weather_prediction")
+            if not pred:
+                st.markdown(
+                    f'<div class="placeholder"><p>{t("wp_placeholder")}</p></div>',
+                    unsafe_allow_html=True,
+                )
+            elif pd.isna(pred["result"]):
+                st.warning("Pas assez d'historique temperature pour cette station/mois.")
+            else:
+                v = pred["result"]
+                label, color, bg, msg = temp_info(v)
+                normal = pred.get("normal", np.nan)
+                delta = v - normal if not pd.isna(normal) else np.nan
+                st.markdown(
+                    f"""
+                <div class="result-card" style="background:{bg}; color:{color};">
+                    <div class="result-route" style="color:{color}">{pred["station"]} · {pred["date"]}</div>
+                    <div class="result-val" style="color:{color}">{v:.1f}</div>
+                    <div class="result-unit" style="color:{color}">°C · {t("wp_result")}</div>
+                    <div class="result-label">{label}</div>
+                    <div class="result-msg" style="color:{color}">{msg}</div>
+                </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+                st.caption(f"Prediction par **{pred['model']}**")
+
+                m1, m2 = st.columns(2)
+                if not pd.isna(normal):
+                    m1.metric(t("wp_hist"), f"{normal:.1f} °C")
+                    m2.metric(t("wp_diff"), f"{delta:+.1f} °C")
+
+                context = pred.get("context", {})
+                if context:
+                    w1, w2, w3, w4 = st.columns(4)
+                    w1.metric(t("wp_rain"), f"{context['RR']:.1f} mm")
+                    w2.metric(t("wp_wind"), f"{context['FFM']:.1f} m/s")
+                    w3.metric(t("wp_rain_cat"), context["precip_category"])
+                    w4.metric(t("wp_wind_cat"), context["wind_category"])
+
+                    event_labels = {
+                        "NEIG": t("wp_snow"),
+                        "BROU": t("wp_fog"),
+                        "ORAG": t("wp_storm"),
+                        "GELEE": t("wp_frost"),
+                        "GRELE": "Grele",
+                        "VERGLAS": "Verglas",
+                        "SOLNEIGE": "Sol neige",
+                    }
+                    event_df = pd.DataFrame(
+                        [
+                            {
+                                "Evenement": event_labels.get(col, col),
+                                "Probabilite": prob,
+                                "Active pour le modele": "oui" if prob >= 0.5 else "non",
+                            }
+                            for col, prob in context.get("events", {}).items()
+                        ]
+                    ).sort_values("Probabilite", ascending=False)
+                    if not event_df.empty:
+                        st.markdown(
+                            f'<p class="stitle">{t("wp_events")}</p>',
+                            unsafe_allow_html=True,
+                        )
+                        st.dataframe(
+                            event_df.style.format({"Probabilite": "{:.1%}"}),
+                            width="stretch",
+                            hide_index=True,
+                        )
+
+        pred = st.session_state.get("weather_prediction")
+        if pred and not pd.isna(pred["result"]):
+            hist = meteo_df[
+                (meteo_df["NOM_USUEL"] == pred["station"])
+                & (meteo_df["month"] == pred["date"].month)
+            ]["TM"].dropna()
+            if len(hist) >= 5:
+                st.markdown("<hr class='sep'>", unsafe_allow_html=True)
+                st.markdown(
+                    f'<p class="stitle">{t("wp_dist")}</p>',
+                    unsafe_allow_html=True,
+                )
+                fig = go.Figure()
+                fig.add_trace(
+                    go.Histogram(
+                        x=hist,
+                        nbinsx=35,
+                        marker_color=C["primary"],
+                        opacity=0.75,
+                        name="",
+                    )
+                )
+                fig.add_vline(
+                    x=pred["result"],
+                    line_color=C["danger"],
+                    line_width=2.5,
+                    annotation_text=f"Prediction : {pred['result']:.1f} °C",
+                    annotation_font_color=C["danger"],
+                )
+                fig.update_layout(
+                    showlegend=False,
+                    xaxis_title="Temperature (°C)",
+                    yaxis_title=t("e_count_ax"),
+                )
+                st.plotly_chart(chart_style(fig, 320), width="stretch")
+
+    with tab_data:
+        k1, k2, k3, k4, k5 = st.columns(5)
+        metrics = [
+            (k1, t("w_records"), f"{len(meteo_f):,}", f"/ {len(meteo_df):,} total"),
+            (k2, t("w_stations"), f"{meteo_f['NOM_USUEL'].nunique():,}", ""),
+            (k3, t("w_temp"), f"{meteo_f['TM'].mean():.1f} °C", "TM"),
+            (k4, t("w_rain"), f"{meteo_f['RR'].mean():.1f} mm", "RR"),
+            (k5, t("w_wind"), f"{meteo_f['FFM'].mean():.1f} m/s", "FFM"),
+        ]
+        for col, lbl, val, sub in metrics:
+            col.markdown(
+                f'<div class="kpi"><p class="kpi-lbl">{lbl}</p>'
+                f'<p class="kpi-val">{val}</p><p class="kpi-sub">{sub}</p></div>',
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+
+        c1, c2 = st.columns(2, gap="medium")
+        with c1:
+            st.markdown(
+                f'<p class="stitle">{t("w_temp_dist")}</p>', unsafe_allow_html=True
+            )
+            fig = px.histogram(
+                meteo_f.dropna(subset=["TM"]),
+                x="TM",
+                nbins=60,
+                color_discrete_sequence=[C["primary"]],
+                labels={"TM": "Temperature (°C)"},
+            )
+            fig.update_layout(
+                showlegend=False,
+                bargap=0.05,
+                xaxis_title="Temperature (°C)",
+                yaxis_title=t("e_count_ax"),
+            )
+            st.plotly_chart(chart_style(fig), width="stretch")
+
+        with c2:
+            st.markdown(
+                f'<p class="stitle">{t("w_temp_trend")}</p>', unsafe_allow_html=True
+            )
+            mon = meteo_f.groupby(["year", "month"])["TM"].mean().reset_index()
+            mon["period"] = pd.to_datetime(mon[["year", "month"]].assign(day=1))
+            fig2 = px.line(
+                mon.sort_values("period"),
+                x="period",
+                y="TM",
+                color_discrete_sequence=[C["primary"]],
+                labels={"TM": "Temperature (°C)", "period": ""},
+            )
+            fig2.add_hline(
+                y=meteo_f["TM"].mean(),
+                line_dash="dot",
+                line_color="#94a3b8",
+                annotation_text=f"{t('e_avg')} {meteo_f['TM'].mean():.1f} °C",
+                annotation_font_color="#94a3b8",
+            )
+            fig2.update_layout(xaxis_title="", yaxis_title="Temperature (°C)")
+            st.plotly_chart(chart_style(fig2), width="stretch")
+
+        c3, c4 = st.columns(2, gap="medium")
+        with c3:
+            st.markdown(
+                f'<p class="stitle">{t("w_precip_season")}</p>',
+                unsafe_allow_html=True,
+            )
+            rain = (
+                meteo_f.groupby("season")["RR"]
+                .mean()
+                .reindex(["winter", "spring", "summer", "autumn"])
+                .reset_index()
+            )
+            rain["Saison"] = rain["season"].map(
+                lambda s: f"{SEASON_EMOJIS.get(s, '')} {slabel(s)}"
+            )
+            fig3 = px.bar(
+                rain,
+                x="Saison",
+                y="RR",
+                color="RR",
+                color_continuous_scale="Blues",
+                labels={"RR": "Pluie (mm)", "Saison": ""},
+            )
+            fig3.update_layout(coloraxis_showscale=False, yaxis_title="Pluie (mm)")
+            st.plotly_chart(chart_style(fig3, 360), width="stretch")
+
+        with c4:
+            st.markdown(f'<p class="stitle">{t("w_events")}</p>', unsafe_allow_html=True)
+            event_cols = [
+                col
+                for col in ["NEIG", "BROU", "ORAG", "GRELE", "VERGLAS", "GELEE"]
+                if col in meteo_f.columns
+            ]
+            if event_cols:
+                events = (
+                    meteo_f.groupby("month")[event_cols]
+                    .sum()
+                    .reset_index()
+                    .melt("month", var_name="Evenement", value_name="Jours-stations")
+                )
+                fig4 = px.line(
+                    events,
+                    x="month",
+                    y="Jours-stations",
+                    color="Evenement",
+                    markers=True,
+                )
+                fig4.update_layout(xaxis_title="Mois", yaxis_title="Jours-stations")
+                st.plotly_chart(chart_style(fig4, 360), width="stretch")
+            else:
+                st.info("Colonnes d'evenements indisponibles.")
+
+        st.markdown(f'<p class="stitle">{t("w_map")}</p>', unsafe_allow_html=True)
+        station_map = (
+            meteo_f.groupby(["NOM_USUEL", "LAT", "LON"], dropna=True)
+            .agg(TM=("TM", "mean"), records=("TM", "size"))
+            .reset_index()
+        )
+        fig_map = px.scatter_map(
+            station_map,
+            lat="LAT",
+            lon="LON",
+            color="TM",
+            size="records",
+            hover_name="NOM_USUEL",
+            color_continuous_scale="RdYlBu_r",
+            zoom=4,
+            height=520,
+        )
+        fig_map.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+        st.plotly_chart(fig_map, width="stretch")
+
+        buf = io.BytesIO()
+        meteo_f.to_csv(buf, index=False)
+        st.download_button(
+            t("w_export"),
+            data=buf.getvalue(),
+            file_name="tardis_meteo_export.csv",
+            mime="text/csv",
+            width="stretch",
+        )
+
+    with tab_audit:
+        if meteo_audit.empty:
+            st.warning("Rapport d'audit meteo introuvable.")
+        else:
+            score_row = meteo_audit[meteo_audit["metric"] == "overall_completeness"]
+            score = float(score_row["value"].iloc[0]) if not score_row.empty else np.nan
+            a1, a2, a3 = st.columns(3)
+            a1.markdown(
+                f'<div class="acc-banner"><div class="acc-banner-val">{score * 100:.1f}%</div>'
+                f'<div class="acc-banner-lbl">{t("w_audit_score")}</div></div>',
+                unsafe_allow_html=True,
+            )
+            a2.markdown(
+                f'<div class="acc-banner" style="background:linear-gradient(135deg,#059669,#10b981)">'
+                f'<div class="acc-banner-val">{len(meteo_audit):,}</div>'
+                f'<div class="acc-banner-lbl">checks audit</div></div>',
+                unsafe_allow_html=True,
+            )
+            a3.markdown(
+                f'<div class="acc-banner" style="background:linear-gradient(135deg,#0ea5e9,#6366f1)">'
+                f'<div class="acc-banner-val">{meteo_audit["category"].nunique()}</div>'
+                f'<div class="acc-banner-lbl">categories</div></div>',
+                unsafe_allow_html=True,
+            )
+
+            st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+            c1, c2 = st.columns(2, gap="medium")
+            with c1:
+                st.markdown(
+                    f'<p class="stitle">{t("w_audit_categories")}</p>',
+                    unsafe_allow_html=True,
+                )
+                cats = (
+                    meteo_audit["category"]
+                    .value_counts()
+                    .rename_axis("Categorie")
+                    .reset_index(name="Checks")
+                )
+                fig_a = px.bar(
+                    cats,
+                    x="Checks",
+                    y="Categorie",
+                    orientation="h",
+                    color="Checks",
+                    color_continuous_scale="Viridis",
+                )
+                fig_a.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
+                st.plotly_chart(chart_style(fig_a, 420), width="stretch")
+
+            with c2:
+                st.markdown(
+                    f'<p class="stitle">{t("w_audit_completeness")}</p>',
+                    unsafe_allow_html=True,
+                )
+                comp = meteo_audit[
+                    meteo_audit["category"] == "completeness_per_column"
+                ].copy()
+                comp["column"] = comp["metric"].str.replace(
+                    "completeness__", "", regex=False
+                )
+                comp["value_pct"] = comp["value"].astype(float) * 100
+                comp = comp.sort_values("value_pct", ascending=True).tail(20)
+                fig_c = px.bar(
+                    comp,
+                    x="value_pct",
+                    y="column",
+                    orientation="h",
+                    color="value_pct",
+                    color_continuous_scale="RdYlGn",
+                    labels={"value_pct": "Completude (%)", "column": ""},
+                )
+                fig_c.update_layout(coloraxis_showscale=False)
+                st.plotly_chart(chart_style(fig_c, 420), width="stretch")
+
+            st.markdown(
+                f'<p class="stitle">{t("w_audit_table")}</p>', unsafe_allow_html=True
+            )
+            st.dataframe(meteo_audit, width="stretch", hide_index=True)
+
+    with tab_models:
+        if not meteo_catalog:
+            st.warning(t("w_model_missing"))
+        else:
+            rows = [
+                {
+                    "Modele": name,
+                    "RMSE": meta.get("RMSE"),
+                    "MAE": meta.get("MAE"),
+                    "R2": meta.get("R2"),
+                    "Fichier": meta.get("file"),
+                }
+                for name, meta in meteo_catalog.items()
+            ]
+            perf = pd.DataFrame(rows).dropna(subset=["RMSE"]).sort_values("RMSE")
+
+            st.markdown(
+                f'<p class="stitle">{t("w_model_table")}</p>', unsafe_allow_html=True
+            )
+            if not perf.empty:
+                best_idx = perf["RMSE"].idxmin()
+
+                def highlight_weather(row):
+                    return (
+                        ["background-color:#f0fdf4;font-weight:700"] * len(row)
+                        if row.name == best_idx
+                        else [""] * len(row)
+                    )
+
+                st.dataframe(
+                    perf.style.apply(highlight_weather, axis=1).format(
+                        {"RMSE": "{:.3f}", "MAE": "{:.3f}", "R2": "{:.4f}"}
+                    ),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+                fig_m = px.bar(
+                    perf,
+                    x="RMSE",
+                    y="Modele",
+                    orientation="h",
+                    color="RMSE",
+                    color_continuous_scale="RdYlGn_r",
+                )
+                fig_m.update_layout(
+                    coloraxis_showscale=False,
+                    yaxis=dict(autorange="reversed"),
+                    xaxis_title="RMSE",
+                )
+                st.plotly_chart(chart_style(fig_m, 420), width="stretch")
+            else:
+                st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
 
 elif page == "models":
