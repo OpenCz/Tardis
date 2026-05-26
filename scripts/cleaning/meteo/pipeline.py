@@ -28,8 +28,8 @@ class Pipeline:
         self,
         data_vent_path: str,
         data_parameter_path: str,
-        output_path: str = "../../../data/processed/meteo/cleaned_meteo_dataset.csv",
-        report_path: str = "../../../data/processed/audit/cleaning_meteo_report.csv",
+        output_path: str = "data/processed/meteo/cleaned_meteo_dataset.csv",
+        report_path: str = "data/processed/audit/cleaning_meteo_report.csv",
     ):
         self.data_vent_path = data_vent_path
         self.data_parameter_path = data_parameter_path
