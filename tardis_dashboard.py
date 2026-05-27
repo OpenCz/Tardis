@@ -1199,19 +1199,66 @@ if page == "predict":
                 fig = go.Figure()
                 fig.add_trace(go.Histogram(
                     x=hist, nbinsx=30,
-                    marker_color=C["primary"], opacity=0.7, name="",
+                    marker_color=C["primary"], opacity=0.75, name="",
+                    marker_line_color="white", marker_line_width=0.4,
                 ))
-                fig.add_vline(x=v, line_color=color, line_width=2.5,
-                              annotation_text=t("p_pred_marker", v=v),
-                              annotation_font_color=color)
+
+                # ── Lignes verticales sans annotation intégrée ──
+                fig.add_vline(x=v, line_color=color, line_width=2.5)
                 if h_mean:
-                    fig.add_vline(x=h_mean, line_color=C["success"], line_dash="dot",
-                                  line_width=1.5, annotation_text=t("p_avg_marker"),
-                                  annotation_font_color=C["success"])
-                fig.update_layout(showlegend=False,
-                                  xaxis_title=t("e_delay_ax"),
-                                  yaxis_title=t("e_count_ax"))
-                st.plotly_chart(chart_style(fig, 280), use_container_width=True, theme=None)
+                    fig.add_vline(
+                        x=h_mean, line_color=C["success"],
+                        line_dash="dot", line_width=1.8,
+                    )
+
+                # ── Badges annotations séparés avec fond coloré ──
+                # Détermine si les deux valeurs sont proches (< 3 min)
+                close = h_mean is not None and abs(v - h_mean) < 3.0
+
+                # Badge prédiction — toujours en haut (y=0.97)
+                fig.add_annotation(
+                    x=v, y=0.97, yref="paper",
+                    text=f"◀ {t('p_pred_marker', v=v)}",
+                    font=dict(color="white", size=10, family="Inter", weight=700),
+                    showarrow=False,
+                    bgcolor=color,
+                    bordercolor=color,
+                    borderpad=4,
+                    borderwidth=0,
+                    opacity=0.92,
+                    # Coté droit si la valeur est dans la 1ère moitié du range
+                    xanchor="left",
+                    xshift=8,
+                )
+
+                # Badge moyenne — plus bas si valeurs proches, sinon même hauteur
+                if h_mean:
+                    y_mean = 0.72 if close else 0.97
+                    # Ancre opposée à la prédiction si très proches en x
+                    anchor_mean = "right" if (close and v >= h_mean) else "left"
+                    xshift_mean = -8 if anchor_mean == "right" else 8
+                    fig.add_annotation(
+                        x=h_mean, y=y_mean, yref="paper",
+                        text=f"◀ {t('p_avg_marker')} {h_mean:.1f} min",
+                        font=dict(color="white", size=10, family="Inter"),
+                        showarrow=False,
+                        bgcolor=C["success"],
+                        bordercolor=C["success"],
+                        borderpad=4,
+                        borderwidth=0,
+                        opacity=0.88,
+                        xanchor=anchor_mean,
+                        xshift=xshift_mean,
+                    )
+
+                fig.update_layout(
+                    showlegend=False,
+                    xaxis_title=t("e_delay_ax"),
+                    yaxis_title=t("e_count_ax"),
+                    # Marge haute suffisante pour les badges
+                    margin=dict(t=44, b=24, l=14, r=14),
+                )
+                st.plotly_chart(chart_style(fig, 300), use_container_width=True, theme=None)
             else:
                 st.info("Pas assez d'historique.")
 
