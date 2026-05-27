@@ -702,12 +702,14 @@ def precip_category(rr: float) -> str:
 def wind_category(ffm: float) -> str:
     if pd.isna(ffm):
         return "calm"
-    if ffm < 2:
+    if ffm < 0.5:
         return "calm"
-    if ffm < 5:
-        return "breeze"
-    if ffm < 10:
-        return "windy"
+    if ffm < 3.3:
+        return "light"
+    if ffm < 7.9:
+        return "moderate"
+    if ffm < 13.8:
+        return "strong"
     return "storm"
 
 
