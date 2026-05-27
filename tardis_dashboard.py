@@ -68,22 +68,25 @@ ROUTE_STAT_FEATURES = [
     "Number of cancelled trains",
     "cancellation_rate",
 ]
-NUMERIC_FEATURES = ROUTE_STAT_FEATURES + ["year", "month", "day_of_week"]
+NUMERIC_FEATURES = ROUTE_STAT_FEATURES + [
+    "year", "month", "day", "day_of_week", "quarter",
+    "week_of_year", "is_weekend", "days_from_year_start"
+]
 CATEGORICAL_FEATURES = ["Departure station", "Arrival station", "Service", "season"]
 
 C = {
-    "primary": "#4f46e5",
-    "success": "#16a34a",
-    "warning": "#d97706",
-    "danger": "#dc2626",
+    "primary": "#6366f1",
+    "success": "#10b981",
+    "warning": "#f59e0b",
+    "danger": "#ef4444",
     "orange": "#f97316",
-    "neutral": "#64748b",
-    "bg": "#f8fafc",
-    "card": "#ffffff",
-    "border": "#e2e8f0",
+    "neutral": "#94a3b8",
+    "bg": "#0f172a",
+    "card": "#1e293b",
+    "border": "#334155",
     "sidebar": "#0f172a",
-    "text": "#0f172a",
-    "muted": "#64748b",
+    "text": "#f1f5f9",
+    "muted": "#94a3b8",
 }
 
 
@@ -91,28 +94,28 @@ def delay_info(v: float) -> tuple:
     if v < 5:
         return (
             "A l'heure",
-            "#16a34a",
-            "#f0fdf4",
+            "#10b981",
+            "#064e3b",
             "Ton train devrait arriver sans souci.",
         )
     if v < 15:
         return (
             "Petit retard",
-            "#d97706",
-            "#fffbeb",
+            "#f59e0b",
+            "#713f12",
             "Un leger retard, reste a portee du quai.",
         )
     if v < 30:
         return (
             "Retard modere",
             "#f97316",
-            "#fff7ed",
+            "#7c2d12",
             "Prevois de quoi patienter sur le quai.",
         )
     return (
         "Retard important",
-        "#dc2626",
-        "#fef2f2",
+        "#ef4444",
+        "#7f1d1d",
         "Mieux vaut avoir de la batterie et de quoi lire.",
     )
 
@@ -121,28 +124,28 @@ def delay_info_en(v: float) -> tuple:
     if v < 5:
         return (
             "On time",
-            "#16a34a",
-            "#f0fdf4",
+            "#10b981",
+            "#064e3b",
             "Your train should arrive without a hitch.",
         )
     if v < 15:
         return (
             "Slight delay",
-            "#d97706",
-            "#fffbeb",
+            "#f59e0b",
+            "#713f12",
             "Just a small delay, stay near the platform.",
         )
     if v < 30:
         return (
             "Moderate delay",
             "#f97316",
-            "#fff7ed",
+            "#7c2d12",
             "Bring something to pass the time.",
         )
     return (
         "Significant delay",
-        "#dc2626",
-        "#fef2f2",
+        "#ef4444",
+        "#7f1d1d",
         "Better have battery and something to read.",
     )
 
@@ -403,10 +406,10 @@ st.markdown(
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 *, *::before, *::after {{ box-sizing: border-box; }}
-html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
-.main .block-container {{ padding: 2rem 2.5rem 3rem; max-width: 1200px; }}
+html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; background: #0f172a !important; color: #f1f5f9 !important; }}
+.main .block-container {{ padding: 2rem 2.5rem 3rem; max-width: 1200px; background: #0f172a !important; }}
 
-[data-testid="stSidebar"] {{ background: {C["sidebar"]} !important; }}
+[data-testid="stSidebar"] {{ background: #0f172a !important; }}
 [data-testid="stSidebar"] > div {{ padding: 1.5rem 1rem; }}
 [data-testid="stSidebar"] * {{ color: #cbd5e1 !important; }}
 [data-testid="stSidebar"] .stSelectbox > label,
@@ -435,15 +438,15 @@ html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
 .kpi {{
     background: {C["card"]}; border: 1px solid {C["border"]};
     border-radius: 14px; padding: 1.25rem 1.5rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    box-shadow: 0 1px 4px rgba(0,0,0,.3);
 }}
 .kpi-val {{ font-size: 2.2rem; font-weight: 800; color: {C["text"]}; line-height: 1.1; margin: 0.25rem 0 0.15rem; }}
 .kpi-lbl {{ font-size: 0.7rem; font-weight: 700; color: {C["muted"]}; text-transform: uppercase; letter-spacing: 0.08em; }}
-.kpi-sub {{ font-size: 0.78rem; color: #94a3b8; }}
+.kpi-sub {{ font-size: 0.78rem; color: #64748b; }}
 
 .result-card {{
     border-radius: 20px; padding: 2.5rem 2rem; text-align: center;
-    box-shadow: 0 8px 32px rgba(0,0,0,.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
 }}
 .result-val   {{ font-size: 6rem; font-weight: 900; line-height: 1; letter-spacing: -0.04em; }}
 .result-unit  {{ font-size: 1.1rem; font-weight: 500; opacity: 0.75; margin-top: 0.2rem; }}
@@ -454,7 +457,7 @@ html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
 .step-card {{
     background: {C["card"]}; border: 1px solid {C["border"]};
     border-radius: 14px; padding: 1.5rem; height: 100%;
-    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    box-shadow: 0 1px 4px rgba(0,0,0,.3);
 }}
 .step-title {{ font-size: 1.05rem; font-weight: 700; color: {C["text"]}; margin-bottom: 0.5rem; }}
 .step-body  {{ font-size: 0.88rem; color: {C["muted"]}; line-height: 1.6; margin: 0; }}
@@ -466,13 +469,13 @@ html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
 
 .placeholder {{
     display: flex; align-items: center; justify-content: center; flex-direction: column;
-    min-height: 340px; background: #f8fafc; border: 2px dashed {C["border"]};
+    min-height: 340px; background: #1e293b; border: 2px dashed {C["border"]};
     border-radius: 20px; text-align: center; padding: 2rem;
 }}
 .placeholder p {{ color: {C["muted"]}; font-size: 1rem; margin: 0; font-weight: 500; }}
 
 .acc-banner {{
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     border-radius: 14px; padding: 1.5rem 2rem; color: white; text-align: center;
 }}
 .acc-banner-val {{ font-size: 3rem; font-weight: 900; letter-spacing: -0.03em; }}
@@ -487,10 +490,15 @@ html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    df = pd.read_csv("data/processed/trains/cleaned_dataset.csv", parse_dates=["Date"])
-    df["day_of_week"] = df["Date"].dt.dayofweek
-    df["month"] = df["Date"].dt.month
+    df = pd.read_csv("cleaned_dataset.csv", parse_dates=["Date"])
     df["year"] = df["Date"].dt.year
+    df["month"] = df["Date"].dt.month
+    df["day"] = df["Date"].dt.day
+    df["day_of_week"] = df["Date"].dt.dayofweek
+    df["quarter"] = df["Date"].dt.quarter
+    df["week_of_year"] = df["Date"].dt.isocalendar().week
+    df["is_weekend"] = df["day_of_week"].isin([5, 6]).astype(int)
+    df["days_from_year_start"] = df["Date"].dt.dayofyear
     df["route"] = df["Departure station"] + " → " + df["Arrival station"]
     return df
 
@@ -655,6 +663,7 @@ def predict(dep: str, arr: str, date, pipeline, route_stats: pd.DataFrame):
     stats = row[ROUTE_STAT_FEATURES].mean()
     service = row["Service"].mode().iloc[0]
     m = date.month
+    day_of_year = date.timetuple().tm_yday
     inp = pd.DataFrame(
         [
             {
@@ -664,7 +673,12 @@ def predict(dep: str, arr: str, date, pipeline, route_stats: pd.DataFrame):
                 "cancellation_rate": stats["cancellation_rate"],
                 "year": date.year,
                 "month": m,
+                "day": date.day,
                 "day_of_week": date.weekday(),
+                "quarter": (m - 1) // 3 + 1,
+                "week_of_year": date.isocalendar()[1],
+                "is_weekend": 1 if date.weekday() >= 5 else 0,
+                "days_from_year_start": day_of_year,
                 "Departure station": dep,
                 "Arrival station": arr,
                 "Service": service,
@@ -844,11 +858,11 @@ def chart_style(fig, height: int = 320):
     fig.update_layout(
         height=height,
         margin=dict(t=20, b=20, l=10, r=10),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
+        plot_bgcolor="#1e293b",
+        paper_bgcolor="#0f172a",
         font=dict(family="Inter", size=11, color=C["text"]),
-        xaxis=dict(gridcolor="#f1f5f9", linecolor=C["border"]),
-        yaxis=dict(gridcolor="#f1f5f9", linecolor=C["border"]),
+        xaxis=dict(gridcolor="#334155", linecolor=C["border"]),
+        yaxis=dict(gridcolor="#334155", linecolor=C["border"]),
     )
     return fig
 
@@ -868,16 +882,16 @@ def make_gauge(v: float, max_val: float = 60) -> go.Figure:
                     "range": [0, max_val],
                     "tickwidth": 1,
                     "tickcolor": C["muted"],
-                    "tickfont": {"size": 10},
+                    "tickfont": {"size": 10, "color": C["muted"]},
                 },
                 "bar": {"color": color, "thickness": 0.3},
-                "bgcolor": "white",
+                "bgcolor": "#1e293b",
                 "borderwidth": 0,
                 "steps": [
-                    {"range": [0, 5], "color": "#dcfce7"},
-                    {"range": [5, 15], "color": "#fef9c3"},
-                    {"range": [15, 30], "color": "#ffedd5"},
-                    {"range": [30, max_val], "color": "#fee2e2"},
+                    {"range": [0, 5], "color": "#064e3b"},
+                    {"range": [5, 15], "color": "#713f12"},
+                    {"range": [15, 30], "color": "#7c2d12"},
+                    {"range": [30, max_val], "color": "#7f1d1d"},
                 ],
                 "threshold": {
                     "line": {"color": color, "width": 4},
@@ -891,8 +905,9 @@ def make_gauge(v: float, max_val: float = 60) -> go.Figure:
     fig.update_layout(
         height=220,
         margin=dict(t=10, b=10, l=20, r=20),
-        paper_bgcolor="white",
-        font=dict(family="Inter"),
+        paper_bgcolor="#0f172a",
+        plot_bgcolor="#1e293b",
+        font=dict(family="Inter", color=C["text"]),
     )
     return fig
 
@@ -902,59 +917,87 @@ route_stats = build_route_stats(df)
 stations = sorted(df["Departure station"].dropna().unique())
 catalog = discover_models()
 
-with st.sidebar:
-    st.markdown("## TARDIS")
-    st.caption("Predicteur de retards TGV SNCF")
+if not catalog:
+    st.warning(t("model_one_only"))
+    st.stop()
 
-    if st.button(t("lang_btn"), width="stretch"):
-        st.session_state.lang = "en" if st.session_state.lang == "fr" else "fr"
-        st.rerun()
+# ── Top Navigation Bar ─────────────────────────────────────────────────────────
+st.markdown(
+    """
+<style>
+.top-navbar {
+    background: #0f172a; padding: 1rem 0; margin: -2rem -2.5rem 2rem;
+    padding-left: 2.5rem; padding-right: 2.5rem;
+    border-bottom: 1px solid #1e293b;
+}
+.top-navbar-content { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+.navbar-brand { color: #f1f5f9; font-size: 1.2rem; font-weight: 800; margin: 0; }
+.navbar-nav { display: flex; gap: 1rem; }
+.nav-btn {
+    padding: 0.5rem 0.75rem; border-radius: 6px; background: transparent;
+    border: 1px solid transparent; color: #cbd5e1; font-size: 0.9rem;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+}
+.nav-btn:hover { background: #1e293b; color: #f1f5f9; border-color: #334155; }
+.navbar-sep { width: 1px; height: 1.5rem; background: #334155; margin: 0 0.5rem; }
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
-    st.divider()
-    st.markdown(f"**{t('nav_title')}**")
+top_col1, top_col2, top_col3, top_col4 = st.columns([2, 1.5, 1.5, 3])
 
+with top_col1:
+    st.markdown("**🚄 TARDIS** — Retards TGV", unsafe_allow_html=True)
+
+with top_col2:
     for pid, lbl in [
         ("predict", t("nav_predict")),
         ("explore", t("nav_explore")),
         ("meteo", t("nav_meteo")),
         ("models", t("nav_models")),
     ]:
-        if st.button(lbl, key=f"nav_{pid}", width="stretch"):
+        if st.button(lbl, key=f"nav_{pid}", use_container_width=False):
             st.session_state.page = pid
             st.rerun()
 
-    st.divider()
-    st.markdown(f"**{t('model_title')}**")
-    if not catalog:
-        st.warning(t("model_one_only"))
-        st.stop()
-
+with top_col3:
     model_names = list(catalog.keys())
-    if len(model_names) == 1:
-        st.info(t("model_one_only"))
-
     def fmt_model(n):
         m = catalog[n]
         return f"{n}  (±{m['RMSE']:.1f} min)" if "RMSE" in m else n
 
     sel_model = st.selectbox(
-        "_",
+        t("model_help"),
         options=model_names,
         format_func=fmt_model,
         label_visibility="collapsed",
-        help=t("model_help"),
         key="model_sel",
     )
     pipeline, model_name = load_pipeline(catalog[sel_model]["file"])
     model_meta = catalog[sel_model]
     importance = get_importance(pipeline)
 
-    st.divider()
-    st.markdown(f"**{t('filters_title')}**")
-    sel_stations = st.multiselect(t("f_stations"), stations, default=list(stations[:8]))
-    ymin, ymax = int(df["year"].min()), int(df["year"].max())
-    year_range = st.slider(t("f_years"), ymin, ymax, (ymin, ymax))
+with top_col4:
+    if st.button(t("lang_btn"), use_container_width=False):
+        st.session_state.lang = "en" if st.session_state.lang == "fr" else "fr"
+        st.rerun()
 
+st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+
+# ── Filters Bar ────────────────────────────────────────────────────────────────
+filter_col1, filter_col2, filter_col3, filter_col4 = st.columns([2, 1.5, 1.5, 1.5])
+
+with filter_col1:
+    sel_stations = st.multiselect(
+        t("f_stations"), stations, default=list(stations[:8]), label_visibility="collapsed"
+    )
+
+with filter_col2:
+    ymin, ymax = int(df["year"].min()), int(df["year"].max())
+    year_range = st.slider(t("f_years"), ymin, ymax, (ymin, ymax), label_visibility="collapsed")
+
+with filter_col3:
     SEASON_OPTS = {
         t("s_winter"): "winter",
         t("s_spring"): "spring",
@@ -962,12 +1005,12 @@ with st.sidebar:
         t("s_autumn"): "autumn",
     }
     sel_s_labels = st.multiselect(
-        t("f_seasons"), list(SEASON_OPTS), default=list(SEASON_OPTS)
+        t("f_seasons"), list(SEASON_OPTS), default=list(SEASON_OPTS), label_visibility="collapsed"
     )
     sel_seasons = [SEASON_OPTS[s] for s in sel_s_labels] or list(SEASON_OPTS.values())
 
-    st.divider()
-    st.caption(f"{len(df):,} {t('dataset_info')}")
+with filter_col4:
+    st.caption(f"📊 {len(df):,} {t('dataset_info')}")
 
 df_f = df[
     df["Departure station"].isin(sel_stations or stations)
@@ -999,7 +1042,7 @@ if page == "predict":
             min_value=datetime.date(2018, 1, 1),
         )
 
-        if st.button(t("p_btn"), type="primary", width="stretch"):
+        if st.button(t("p_btn"), type="primary", use_container_width=True):
             result, approx = predict(dep, arr, date, pipeline, route_stats)
             st.session_state.prediction = {
                 "dep": dep,
@@ -1051,7 +1094,7 @@ if page == "predict":
                 st.caption(t("p_approx"))
 
             st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
-            st.plotly_chart(make_gauge(v), width="stretch")
+            st.plotly_chart(make_gauge(v), use_container_width=True)
 
             hist = df[
                 (df["Departure station"] == dep_) & (df["Arrival station"] == arr_)
@@ -1125,7 +1168,7 @@ if page == "predict":
                     xaxis_title=t("e_delay_ax"),
                     yaxis_title=t("e_count_ax"),
                 )
-                st.plotly_chart(chart_style(fig, 300), width="stretch")
+                st.plotly_chart(chart_style(fig, 300), use_container_width=True)
 
         with right2:
             st.markdown(
@@ -1169,7 +1212,7 @@ if page == "predict":
                     xaxis_title="",
                     yaxis_title=t("e_delay_ax"),
                 )
-                st.plotly_chart(chart_style(fig2, 300), width="stretch")
+                st.plotly_chart(chart_style(fig2, 300), use_container_width=True)
 
 
 elif page == "explore":
@@ -1220,7 +1263,7 @@ elif page == "explore":
             xaxis_title=t("e_delay_ax"),
             yaxis_title=t("e_count_ax"),
         )
-        st.plotly_chart(chart_style(fig), width="stretch")
+        st.plotly_chart(chart_style(fig), use_container_width=True)
 
     with c2:
         st.markdown(f'<p class="stitle">{t("e_trend")}</p>', unsafe_allow_html=True)
@@ -1242,7 +1285,7 @@ elif page == "explore":
             annotation_font_color="#94a3b8",
         )
         fig2.update_layout(xaxis_title="", yaxis_title=t("e_delay_ax"))
-        st.plotly_chart(chart_style(fig2), width="stretch")
+        st.plotly_chart(chart_style(fig2), use_container_width=True)
 
     c3, c4 = st.columns(2, gap="medium")
     with c3:
@@ -1269,7 +1312,7 @@ elif page == "explore":
             yaxis=dict(autorange="reversed"),
             xaxis_title=t("e_delay_ax"),
         )
-        st.plotly_chart(chart_style(fig3, 420), width="stretch")
+        st.plotly_chart(chart_style(fig3, 420), use_container_width=True)
 
     with c4:
         st.markdown(f'<p class="stitle">{t("e_heatmap")}</p>', unsafe_allow_html=True)
@@ -1284,7 +1327,7 @@ elif page == "explore":
             color_continuous_scale="RdYlGn_r",
             labels={"color": t("e_delay_ax")},
         )
-        st.plotly_chart(chart_style(fig4, 420), width="stretch")
+        st.plotly_chart(chart_style(fig4, 420), use_container_width=True)
 
     st.markdown("<hr class='sep'>", unsafe_allow_html=True)
     st.markdown(f'<p class="stitle">{t("e_export")}</p>', unsafe_allow_html=True)
@@ -1295,7 +1338,7 @@ elif page == "explore":
         data=buf.getvalue(),
         file_name="tardis_export.csv",
         mime="text/csv",
-        width="stretch",
+        use_container_width=True,
     )
 
 
@@ -1933,7 +1976,7 @@ elif page == "models":
             fig_imp.update_layout(
                 xaxis_title="Importance relative", yaxis_title="", showlegend=False
             )
-            st.plotly_chart(chart_style(fig_imp, 500), width="stretch")
+            st.plotly_chart(chart_style(fig_imp, 500), use_container_width=True)
         else:
             st.info(t("m_imp_na"))
 
@@ -1963,7 +2006,7 @@ elif page == "models":
                     .format({t("m_rmse"): "±{:.1f} min", t("m_r2"): "{:.1%}"})
                     .bar(subset=[t("m_rmse")], color="#fecaca", vmin=0)
                     .bar(subset=[t("m_r2")], color="#bbf7d0", vmin=0, vmax=1),
-                    width="stretch",
+                    use_container_width=True,
                     hide_index=True,
                 )
                 best_row = perf.iloc[0]

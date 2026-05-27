@@ -13,10 +13,8 @@ def normalize_labels(df, cols=None):
     if missing:
         print(f"[normalize_labels] Missing columns skipped: {missing}")
 
+    df = df.copy()
     for col in present:
         df[col] = df[col].astype("string").str.strip().str.upper()
-
-    for col in present:
-        print(f"Unique {col}: {df[col].nunique()}")
 
     return df

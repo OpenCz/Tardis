@@ -43,10 +43,10 @@ def merge_trains(delay_df: pd.DataFrame, station_df: pd.DataFrame) -> pd.DataFra
         station_norm.rename(
             columns={
                 "_key": "_dep_key",
-                "Trigramme": "departure_station_trigrame",
+                "Trigramme": "departure_station_trigramme",
                 "Position géographique": "departure_station_geo",
                 "Segment(s) DRG": "departure_station_segment",
-                "Code commune": "departure_station_comunal_code",
+                "Code commune": "departure_station_communal_code",
                 "Code_UIC": "departure_station_UIC_code",
                 "Id_Gare": "departure_station_id",
             }
@@ -55,9 +55,9 @@ def merge_trains(delay_df: pd.DataFrame, station_df: pd.DataFrame) -> pd.DataFra
                 "_dep_key",
                 "departure_station_id",
                 "departure_station_geo",
-                "departure_station_trigrame",
+                "departure_station_trigramme",
                 "departure_station_segment",
-                "departure_station_comunal_code",
+                "departure_station_communal_code",
                 "departure_station_UIC_code",
             ]
         ],
@@ -69,10 +69,10 @@ def merge_trains(delay_df: pd.DataFrame, station_df: pd.DataFrame) -> pd.DataFra
         station_norm.rename(
             columns={
                 "_key": "_arr_key",
-                "Trigramme": "arrival_station_trigrame",
+                "Trigramme": "arrival_station_trigramme",
                 "Position géographique": "arrival_station_geo",
                 "Segment(s) DRG": "arrival_station_segment",
-                "Code commune": "arrival_station_comunal_code",
+                "Code commune": "arrival_station_communal_code",
                 "Code_UIC": "arrival_station_UIC_code",
                 "Id_Gare": "arrival_station_id",
             }
@@ -81,9 +81,9 @@ def merge_trains(delay_df: pd.DataFrame, station_df: pd.DataFrame) -> pd.DataFra
                 "_arr_key",
                 "arrival_station_id",
                 "arrival_station_geo",
-                "arrival_station_trigrame",
+                "arrival_station_trigramme",
                 "arrival_station_segment",
-                "arrival_station_comunal_code",
+                "arrival_station_communal_code",
                 "arrival_station_UIC_code",
             ]
         ],

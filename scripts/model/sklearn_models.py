@@ -115,7 +115,7 @@ def tune_best(
 
     pipe = _make_pipeline(preprocessor, base)
     search = GridSearchCV(
-        pipe, grid, cv=3, scoring="neg_root_mean_squared_error", n_jobs=1, verbose=1
+        pipe, grid, cv=3, scoring="neg_root_mean_squared_error", n_jobs=-1, verbose=1
     )
     search.fit(X_train, y_train)
     tuned = search.best_estimator_
