@@ -6,7 +6,7 @@ import joblib
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from ..features import add_time_features
+from ..cleaning.trains import add_time_features
 from .config import ALL_FEATURES, RANDOM_STATE, TARGET
 from .dl_models import HAS_TF, HAS_TORCH, train_keras, train_torch
 from .evaluation import baseline_metrics, compare_models
