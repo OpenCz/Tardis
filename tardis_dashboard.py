@@ -12,6 +12,7 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
+import pydeck as pdk
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -60,23 +61,35 @@ CATEGORICAL_FEATURES = ["Departure station", "Arrival station", "Service", "seas
 
 # ── Palette ────────────────────────────────────────────────────────────────────
 C = {
-    "primary":   "#4f46e5",
-    "violet":    "#7c3aed",
-    "sky":       "#0ea5e9",
-    "teal":      "#0891b2",
-    "success":   "#10b981",
-    "warning":   "#f59e0b",
-    "danger":    "#ef4444",
-    "orange":    "#f97316",
+    "primary":   "#6366f1",   # indigo vif
+    "violet":    "#8b5cf6",   # violet
+    "sky":       "#0ea5e9",   # bleu ciel
+    "teal":      "#14b8a6",   # teal
+    "success":   "#22c55e",   # vert vif
+    "warning":   "#f59e0b",   # ambre
+    "danger":    "#f43f5e",   # rose-rouge vif
+    "orange":    "#fb923c",   # orange vif
     "neutral":   "#64748b",
-    "bg":        "#f8fafc",
+    "bg":        "#f0f4ff",   # fond légèrement bleuté
     "card":      "#ffffff",
-    "border":    "#e2e8f0",
+    "border":    "#dbeafe",   # bordure bleue légère
     "sidebar":   "#05152e",
     "text":      "#0f172a",
-    "muted":     "#64748b",
-    "highlight": "#ede9fe",
+    "muted":     "#475569",   # plus foncé pour meilleur contraste
+    "highlight": "#e0e7ff",
+    # Chart backgrounds
+    "chart_bg":  "rgb(248,250,255)",   # fond chart légèrement bleuté
+    "grid":      "#e8eef8",            # grille plus visible
 }
+# Palette Plotly haute saturation pour les séries
+CHART_COLORS = [
+    "#6366f1", "#f43f5e", "#22c55e", "#f59e0b",
+    "#0ea5e9", "#8b5cf6", "#fb923c", "#14b8a6",
+]
+# Color scale vivid (remplace RdYlGn_r terne)
+RDYLGN  = [[0.0, "#22c55e"], [0.3, "#84cc16"], [0.5, "#f59e0b"],
+           [0.75, "#fb923c"], [1.0, "#f43f5e"]]
+PLASMA  = "plasma"  # pour les heatmaps
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
 st.markdown(
@@ -173,25 +186,31 @@ html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
 .kpi {{
     background: {C["card"]}; border: 1px solid {C["border"]};
     border-radius: 16px; padding: 1.1rem 1.35rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    box-shadow: 0 2px 12px rgba(99,102,241,.07);
     transition: box-shadow 0.2s, transform 0.2s;
     position: relative; overflow: hidden;
 }}
-.kpi:hover {{ box-shadow: 0 6px 20px rgba(0,0,0,.08); transform: translateY(-1px); }}
+.kpi:hover {{ box-shadow: 0 8px 28px rgba(99,102,241,.14); transform: translateY(-2px); }}
 .kpi::before {{
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
     background: var(--kpi-accent, {C["primary"]}); border-radius: 16px 16px 0 0;
 }}
-.kpi-icon {{ font-size: 1.4rem; margin-bottom: 0.4rem; }}
+.kpi::after {{
+    content: ''; position: absolute; bottom: 0; right: 0;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, var(--kpi-accent, {C["primary"]}) 0%, transparent 70%);
+    opacity: 0.06; border-radius: 50%;
+}}
+.kpi-icon {{ font-size: 1.5rem; margin-bottom: 0.35rem; }}
 .kpi-lbl {{
-    font-size: 0.66rem; font-weight: 800; color: {C["muted"]};
-    text-transform: uppercase; letter-spacing: 0.09em; margin: 0;
+    font-size: 0.65rem; font-weight: 800; color: {C["muted"]};
+    text-transform: uppercase; letter-spacing: 0.1em; margin: 0;
 }}
 .kpi-val {{
-    font-size: 2rem; font-weight: 800; color: {C["text"]};
-    line-height: 1.1; margin: 0.2rem 0 0.1rem; letter-spacing: -0.02em;
+    font-size: 2rem; font-weight: 800; color: var(--kpi-accent, {C["text"]});
+    line-height: 1.1; margin: 0.18rem 0 0.1rem; letter-spacing: -0.025em;
 }}
-.kpi-sub {{ font-size: 0.73rem; color: #94a3b8; margin: 0; }}
+.kpi-sub {{ font-size: 0.71rem; color: #94a3b8; margin: 0; }}
 
 /* ── Section title ── */
 .stitle {{
@@ -541,6 +560,28 @@ def get_delay_info(v: float):
     return (en_fn if st.session_state.lang == "en" else fr_fn)(v)
 
 
+# ── Geo helpers ───────────────────────────────────────────────────────────────
+def _parse_geo(s):
+    try:
+        lat, lon = str(s).split(", ")
+        return float(lat), float(lon)
+    except Exception:
+        return np.nan, np.nan
+
+
+def delay_to_rgb(delay: float, d_min: float = 2.5, d_max: float = 11.0,
+                 alpha: int = 210) -> list:
+    """Convert a delay value to an RGBA list for PyDeck layers."""
+    t = float(np.clip((delay - d_min) / (d_max - d_min + 1e-9), 0, 1))
+    if t < 0.33:
+        r, g, b = int(34 + 220 * t / 0.33), int(197 - 40 * t / 0.33), 50
+    elif t < 0.66:
+        r, g, b = 255, int(157 - 80 * (t - 0.33) / 0.33), 30
+    else:
+        r, g, b = 255, int(77 - 60 * (t - 0.66) / 0.34), 20
+    return [r, g, b, alpha]
+
+
 # ── Data loading ───────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data() -> pd.DataFrame:
@@ -551,16 +592,12 @@ def load_data() -> pd.DataFrame:
     df["month"]       = df["Date"].dt.month
     df["year"]        = df["Date"].dt.year
     df["route"]       = df["Departure station"] + " → " + df["Arrival station"]
-    # Parse geo coordinates
-    def parse_geo(s):
-        try:
-            lat, lon = str(s).split(", ")
-            return float(lat), float(lon)
-        except Exception:
-            return np.nan, np.nan
 
     df[["dep_lat", "dep_lon"]] = pd.DataFrame(
-        df["departure_station_geo"].map(parse_geo).tolist(), index=df.index
+        df["departure_station_geo"].map(_parse_geo).tolist(), index=df.index
+    )
+    df[["arr_lat", "arr_lon"]] = pd.DataFrame(
+        df["arrival_station_geo"].map(_parse_geo).tolist(), index=df.index
     )
     return df
 
@@ -579,19 +616,93 @@ def build_route_stats(df: pd.DataFrame) -> pd.DataFrame:
 @st.cache_data
 def build_station_geo(df: pd.DataFrame) -> pd.DataFrame:
     """Per-station aggregates with geo coords for map view."""
-    return (
+    agg_dict = {
+        "dep_lat":          ("dep_lat",  "first"),
+        "dep_lon":          ("dep_lon",  "first"),
+        "avg_delay":        (TARGET,     "mean"),
+        "n_trips":          ("Date",     "count"),
+        "cancel_rate":      ("cancellation_rate", "mean"),
+        "punct_rate":       ("punctuality_rate",  "mean"),
+    }
+    # Optional >60min column
+    col60 = "Number of trains delayed > 60min"
+    if col60 in df.columns:
+        agg_dict["n_delay_60"] = (col60, "sum")
+    col_sched = "Number of scheduled trains"
+    if col_sched in df.columns:
+        agg_dict["n_sched"] = (col_sched, "sum")
+
+    result = (
         df.groupby("Departure station")
+        .agg(**agg_dict)
+        .reset_index()
+        .dropna(subset=["dep_lat", "dep_lon"])
+        .rename(columns={
+            "Departure station": "station",
+            "dep_lat": "lat", "dep_lon": "lon",
+        })
+    )
+    # Compute colors and elevations for pydeck
+    d_min = result["avg_delay"].min()
+    d_max = result["avg_delay"].max()
+    result["color"]     = result["avg_delay"].apply(
+        lambda d: delay_to_rgb(d, d_min, d_max)
+    )
+    result["elevation"] = (result["avg_delay"] - d_min) / (d_max - d_min + 1e-9) * 120_000 + 20_000
+    result["avg_delay_r"] = result["avg_delay"].round(2)
+    result["cancel_pct"]  = (result["cancel_rate"] * 100).round(2)
+    result["punct_pct"]   = (result["punct_rate"] * 100).round(1)
+    return result
+
+
+@st.cache_data
+def build_route_arcs(df: pd.DataFrame) -> pd.DataFrame:
+    """Per-route aggregates with full departure + arrival geo for ArcLayer."""
+    col60   = "Number of trains delayed > 60min"
+    col_sched = "Number of scheduled trains"
+    extra = {}
+    if col60    in df.columns: extra["n_delay_60"] = (col60,    "sum")
+    if col_sched in df.columns: extra["n_sched"]   = (col_sched, "sum")
+
+    route_agg = (
+        df.groupby(["Departure station", "Arrival station"])
         .agg(
-            lat         = ("dep_lat",  "first"),
-            lon         = ("dep_lon",  "first"),
-            avg_delay   = (TARGET,     "mean"),
-            n_trips     = ("Date",     "count"),
-            cancel_rate = ("cancellation_rate", "mean"),
+            dep_lat     = ("dep_lat", "first"),
+            dep_lon     = ("dep_lon", "first"),
+            arr_lat     = ("arr_lat", "first"),
+            arr_lon     = ("arr_lon", "first"),
+            avg_delay   = (TARGET,            "mean"),
+            dep_delay   = (DEP_TARGET,        "mean"),
+            n_trips     = ("Date",            "count"),
+            cancel_rate = ("cancellation_rate","mean"),
+            journey_time= ("Average journey time", "mean"),
+            **extra,
         )
         .reset_index()
-        .dropna(subset=["lat", "lon"])
-        .rename(columns={"Departure station": "station"})
+        .dropna(subset=["dep_lat", "dep_lon", "arr_lat", "arr_lon"])
     )
+    route_agg["route"] = (route_agg["Departure station"] + " → "
+                          + route_agg["Arrival station"])
+    d_min = route_agg["avg_delay"].min()
+    d_max = route_agg["avg_delay"].max()
+    # Source color (departure side): blue tones
+    route_agg["src_color"] = route_agg["avg_delay"].apply(
+        lambda d: delay_to_rgb(d, d_min, d_max, alpha=180)
+    )
+    # Target color (arrival side): same but more opaque
+    route_agg["tgt_color"] = route_agg["avg_delay"].apply(
+        lambda d: delay_to_rgb(d, d_min, d_max, alpha=230)
+    )
+    # Arc width proportional to trip count (normalised 1–8)
+    w_min = route_agg["n_trips"].min()
+    w_max = route_agg["n_trips"].max()
+    route_agg["arc_width"] = (
+        1 + 7 * (route_agg["n_trips"] - w_min) / (w_max - w_min + 1e-9)
+    ).round(1)
+    route_agg["avg_delay_r"]  = route_agg["avg_delay"].round(2)
+    route_agg["cancel_pct"]   = (route_agg["cancel_rate"] * 100).round(2)
+    route_agg["journey_time_r"] = route_agg["journey_time"].round(0)
+    return route_agg
 
 
 def discover_models() -> dict:
@@ -688,13 +799,24 @@ def predict(dep, arr, date, pipeline, route_stats):
 
 # ── Chart helpers ──────────────────────────────────────────────────────────────
 def chart_style(fig, height: int = 320, margin=None):
-    m = margin or dict(t=24, b=20, l=10, r=10)
+    m = margin or dict(t=28, b=24, l=14, r=14)
     fig.update_layout(
         height=height, margin=m,
-        plot_bgcolor="white", paper_bgcolor="white",
-        font=dict(family="Inter", size=11, color=C["text"]),
-        xaxis=dict(gridcolor="#f1f5f9", linecolor=C["border"], zeroline=False),
-        yaxis=dict(gridcolor="#f1f5f9", linecolor=C["border"], zeroline=False),
+        plot_bgcolor=C["chart_bg"], paper_bgcolor="white",
+        font=dict(family="Inter", size=12, color=C["text"]),
+        xaxis=dict(
+            gridcolor=C["grid"], linecolor="#cbd5e1",
+            zeroline=False, showline=True, linewidth=1,
+        ),
+        yaxis=dict(
+            gridcolor=C["grid"], linecolor="#cbd5e1",
+            zeroline=False, showline=True, linewidth=1,
+        ),
+    )
+    # Thicker lines by default for line charts
+    fig.update_traces(
+        selector=dict(type="scatter", mode="lines"),
+        line=dict(width=2.5),
     )
     return fig
 
@@ -1157,13 +1279,20 @@ elif page == "explore":
         c1, c2 = st.columns(2, gap="medium")
         with c1:
             section_title(t("e_dist"), "📊")
-            fig = px.histogram(
-                df_f.dropna(subset=[TARGET]),
-                x=TARGET, nbins=55,
-                color_discrete_sequence=[C["primary"]],
-                labels={TARGET: t("e_delay_ax")},
-            )
-            fig.update_layout(showlegend=False, bargap=0.05,
+            hist_data = df_f.dropna(subset=[TARGET])
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(
+                x=hist_data[TARGET], nbinsx=55,
+                marker=dict(
+                    color=hist_data[TARGET],
+                    colorscale=RDYLGN,
+                    showscale=False,
+                    line=dict(color="white", width=0.4),
+                ),
+                opacity=0.9,
+                name="",
+            ))
+            fig.update_layout(showlegend=False, bargap=0.04,
                               xaxis_title=t("e_delay_ax"), yaxis_title=t("e_count_ax"))
             st.plotly_chart(chart_style(fig), use_container_width=True)
 
@@ -1171,17 +1300,23 @@ elif page == "explore":
             section_title(t("e_trend"), "📈")
             mon = df_f.groupby(["year", "month"])[TARGET].mean().reset_index()
             mon["period"] = pd.to_datetime(mon[["year", "month"]].assign(day=1))
-            fig2 = px.area(
-                mon.sort_values("period"), x="period", y=TARGET,
-                color_discrete_sequence=[C["primary"]],
-                labels={TARGET: t("e_delay_ax"), "period": ""},
-            )
+            fig2 = go.Figure()
+            fig2.add_trace(go.Scatter(
+                x=mon.sort_values("period")["period"],
+                y=mon.sort_values("period")[TARGET],
+                mode="lines",
+                line=dict(color=C["primary"], width=2.5),
+                fill="tozeroy",
+                fillcolor="rgba(99,102,241,0.15)",
+                name="",
+            ))
             mv = df_f[TARGET].mean()
-            fig2.add_hline(y=mv, line_dash="dot", line_color="#94a3b8",
+            fig2.add_hline(y=mv, line_dash="dot", line_color="#94a3b8", line_width=1.5,
                            annotation_text=f"{t('e_avg')} {mv:.1f} min",
-                           annotation_font_color="#94a3b8")
-            fig2.update_layout(xaxis_title="", yaxis_title=t("e_delay_ax"))
-            fig2.update_traces(fillcolor="rgba(79,70,229,0.08)")
+                           annotation_font_color="#64748b",
+                           annotation_bgcolor="rgba(255,255,255,0.8)")
+            fig2.update_layout(showlegend=False,
+                               xaxis_title="", yaxis_title=t("e_delay_ax"))
             st.plotly_chart(chart_style(fig2), use_container_width=True)
 
         c3, c4 = st.columns(2, gap="medium")
@@ -1193,15 +1328,21 @@ elif page == "explore":
             )
             fig3 = px.bar(
                 top, x=TARGET, y="Departure station", orientation="h",
-                color=TARGET, color_continuous_scale="RdYlGn_r",
+                color=TARGET, color_continuous_scale=RDYLGN,
+                range_color=[top[TARGET].min() * 0.9, top[TARGET].max() * 1.05],
                 labels={TARGET: t("e_delay_ax"), "Departure station": ""},
                 text=top[TARGET].round(1),
             )
             fig3.update_layout(
-                coloraxis_showscale=False, yaxis=dict(autorange="reversed"),
+                coloraxis_showscale=True,
+                coloraxis_colorbar=dict(title=t("e_delay_ax"), thickness=12, len=0.7),
+                yaxis=dict(autorange="reversed"),
                 xaxis_title=t("e_delay_ax"),
             )
-            fig3.update_traces(textposition="outside", textfont_size=10)
+            fig3.update_traces(
+                textposition="outside", textfont_size=10,
+                marker_line_color="white", marker_line_width=0.5,
+            )
             st.plotly_chart(chart_style(fig3, 430), use_container_width=True)
 
         with c4:
@@ -1210,9 +1351,12 @@ elif page == "explore":
             pivot = pivot.reindex(columns=["winter", "spring", "summer", "autumn"])
             pivot.columns = [slabel(c) for c in pivot.columns]
             fig4 = px.imshow(
-                pivot, text_auto=".1f", color_continuous_scale="RdYlGn_r",
+                pivot, text_auto=".1f",
+                color_continuous_scale=PLASMA,
                 labels={"color": t("e_delay_ax")},
+                aspect="auto",
             )
+            fig4.update_traces(textfont=dict(size=13, family="Inter", color="white"))
             fig4.update_layout(xaxis_title="", yaxis_title="Année")
             st.plotly_chart(chart_style(fig4, 430), use_container_width=True)
 
@@ -1238,15 +1382,21 @@ elif page == "explore":
             dow_delay["Jour"] = dow_delay["day_of_week"].map(
                 lambda x: dow_labels_full[x] if x < len(dow_labels_full) else x
             )
-            fig_dow = px.bar(
-                dow_delay, x="Jour", y=TARGET,
-                color=TARGET, color_continuous_scale="RdYlGn_r",
-                labels={TARGET: t("e_delay_ax")}, text=dow_delay[TARGET].round(1),
-            )
-            fig_dow.update_traces(textposition="outside", textfont_size=11)
-            fig_dow.update_layout(coloraxis_showscale=False, showlegend=False,
-                                  xaxis_title="", yaxis_title=t("e_delay_ax"))
-            st.plotly_chart(chart_style(fig_dow, 310), use_container_width=True)
+            dow_delay["is_wknd"] = dow_delay["day_of_week"] >= 5
+            fig_dow = go.Figure()
+            for _, row in dow_delay.iterrows():
+                clr = C["violet"] if row["is_wknd"] else C["primary"]
+                fig_dow.add_trace(go.Bar(
+                    x=[row["Jour"]], y=[row[TARGET]],
+                    text=[f"{row[TARGET]:.1f}"],
+                    textposition="outside", textfont_size=12,
+                    marker_color=clr,
+                    marker_line_color="white", marker_line_width=1.5,
+                    showlegend=False, name="",
+                ))
+            fig_dow.update_layout(barmode="group", xaxis_title="",
+                                  yaxis_title=t("e_delay_ax"), showlegend=False)
+            st.plotly_chart(chart_style(fig_dow, 320), use_container_width=True)
 
         with t1c2:
             section_title(t("e_by_month"), "📆")
@@ -1259,15 +1409,23 @@ elif page == "explore":
             month_delay["Mois"] = month_delay["month"].map(
                 lambda x: m_names[x - 1] if 1 <= x <= 12 else x
             )
-            fig_mo = px.line(
-                month_delay, x="Mois", y=TARGET,
-                markers=True, color_discrete_sequence=[C["primary"]],
-                labels={TARGET: t("e_delay_ax")}, text=month_delay[TARGET].round(1),
+            month_delay["color"] = month_delay[TARGET].apply(
+                lambda v: delay_to_rgb(v, month_delay[TARGET].min(), month_delay[TARGET].max(), 255)
             )
-            fig_mo.update_traces(textposition="top center", textfont_size=10,
-                                  marker_size=8)
-            fig_mo.update_layout(xaxis_title="", yaxis_title=t("e_delay_ax"))
-            st.plotly_chart(chart_style(fig_mo, 310), use_container_width=True)
+            fig_mo = go.Figure()
+            fig_mo.add_trace(go.Bar(
+                x=month_delay["Mois"], y=month_delay[TARGET],
+                text=month_delay[TARGET].round(1),
+                textposition="outside", textfont_size=11,
+                marker_color=month_delay["color"].apply(
+                    lambda c: f"rgba({c[0]},{c[1]},{c[2]},0.9)"
+                ),
+                marker_line_color="white", marker_line_width=1.5,
+                name="",
+            ))
+            fig_mo.update_layout(showlegend=False,
+                                  xaxis_title="", yaxis_title=t("e_delay_ax"))
+            st.plotly_chart(chart_style(fig_mo, 320), use_container_width=True)
 
         t2c1, t2c2 = st.columns(2, gap="medium")
 
@@ -1389,7 +1547,7 @@ elif page == "explore":
                 route_agg.query("n >= 5"),
                 x="journey_time", y="avg_delay",
                 size="n", color="avg_delay",
-                color_continuous_scale="RdYlGn_r",
+                color_continuous_scale=RDYLGN,
                 hover_name="route",
                 hover_data={"n": True, "cancel_rate": ":.3f",
                             "journey_time": ":.0f", "avg_delay": ":.1f"},
@@ -1398,8 +1556,16 @@ elif page == "explore":
                     "journey_time": t("e_journey_time"),
                     "n":            t("e_count_ax"),
                 },
+                size_max=28,
             )
-            fig_sc.update_layout(coloraxis_showscale=False, showlegend=False)
+            fig_sc.update_traces(
+                marker=dict(line=dict(color="white", width=1.5)),
+            )
+            fig_sc.update_layout(
+                coloraxis_showscale=True,
+                coloraxis_colorbar=dict(title=t("e_delay_ax"), thickness=12),
+                showlegend=False,
+            )
             st.plotly_chart(chart_style(fig_sc, 540), use_container_width=True)
 
         # Route detail table
@@ -1524,14 +1690,21 @@ elif page == "explore":
             section_title(t("e_cancel_trend"), "📈")
             mon_cancel = df_f.groupby(["year", "month"])["cancellation_rate"].mean().reset_index()
             mon_cancel["period"] = pd.to_datetime(mon_cancel[["year", "month"]].assign(day=1))
-            fig_ct2 = px.area(
-                mon_cancel.sort_values("period"), x="period", y="cancellation_rate",
-                color_discrete_sequence=[C["danger"]],
-                labels={"cancellation_rate": t("e_cancel_rate"), "period": ""},
+            fig_ct2 = go.Figure()
+            mc_sorted = mon_cancel.sort_values("period")
+            fig_ct2.add_trace(go.Scatter(
+                x=mc_sorted["period"], y=mc_sorted["cancellation_rate"],
+                mode="lines",
+                line=dict(color=C["danger"], width=2.5),
+                fill="tozeroy",
+                fillcolor="rgba(244,63,94,0.18)",
+                name="",
+            ))
+            fig_ct2.update_layout(
+                showlegend=False,
+                xaxis_title="", yaxis_title=t("e_cancel_rate"),
+                yaxis_tickformat=".1%",
             )
-            fig_ct2.update_traces(fillcolor="rgba(239,68,68,0.08)")
-            fig_ct2.update_layout(xaxis_title="", yaxis_title=t("e_cancel_rate"),
-                                   yaxis_tickformat=".1%")
             st.plotly_chart(chart_style(fig_ct2, 310), use_container_width=True)
 
         with can2:
@@ -1570,58 +1743,214 @@ elif page == "explore":
         fig_ch.update_layout(xaxis_title="", yaxis_title="Année")
         st.plotly_chart(chart_style(fig_ch, 380), use_container_width=True)
 
-    # ── TAB 6: Map ─────────────────────────────────────────────────────────
+    # ── TAB 6: Carte 3D ────────────────────────────────────────────────────
     with tabs[5]:
-        section_title(t("e_map_title"), "🗺️")
-        st.caption("Taille des bulles ∝ nombre de trajets · Couleur = retard moyen")
+        station_geo  = build_station_geo(df_f)
+        route_arcs   = build_route_arcs(df_f)
 
-        station_geo = build_station_geo(df_f)
-
-        if len(station_geo) > 0:
-            fig_map = px.scatter_map(
-                station_geo.dropna(subset=["lat", "lon"]),
-                lat="lat", lon="lon",
-                size="n_trips",
-                color="avg_delay",
-                hover_name="station",
-                hover_data={
-                    "avg_delay":   ":.1f",
-                    "n_trips":     True,
-                    "cancel_rate": ":.3f",
-                    "lat":         False,
-                    "lon":         False,
-                },
-                color_continuous_scale="RdYlGn_r",
-                size_max=40,
-                zoom=4.8,
-                center={"lat": 46.5, "lon": 2.5},
-                map_style="open-street-map",
-                labels={
-                    "avg_delay":   t("e_delay_ax"),
-                    "n_trips":     t("e_count_ax"),
-                    "cancel_rate": t("e_cancel_rate"),
-                },
-            )
-            fig_map.update_layout(
-                height=560,
-                margin=dict(t=10, b=10, l=0, r=0),
-                coloraxis_colorbar=dict(
-                    title=t("e_delay_ax"), thickness=14, len=0.6,
-                ),
-            )
-            st.plotly_chart(fig_map, use_container_width=True)
-
-            # Quick stats next to map
-            mc1, mc2, mc3 = st.columns(3)
-            worst = station_geo.nlargest(1, "avg_delay").iloc[0]
-            best  = station_geo.nsmallest(1, "avg_delay").iloc[0]
-            mc1.metric("🔴 Gare la plus en retard", worst["station"],
-                       f"{worst['avg_delay']:.1f} min")
-            mc2.metric("🟢 Gare la plus ponctuelle", best["station"],
-                       f"{best['avg_delay']:.1f} min")
-            mc3.metric("📍 Gares sur la carte", f"{len(station_geo)}")
-        else:
+        if len(station_geo) == 0:
             st.info("Pas de données géographiques disponibles avec les filtres actuels.")
+        else:
+            # ── View selector ────────────────────────────────────────────────
+            view_mode = st.radio(
+                "Vue 3D",
+                options=[
+                    "🏙️ Colonnes 3D — retard par gare",
+                    "🌐 Arcs des trajets — retard par route",
+                    "🔀 Vue combinée",
+                ],
+                horizontal=True,
+                label_visibility="collapsed",
+            )
+
+            # ── Quick stats ──────────────────────────────────────────────────
+            ms1, ms2, ms3, ms4 = st.columns(4)
+            worst  = station_geo.nlargest(1, "avg_delay").iloc[0]
+            best   = station_geo.nsmallest(1, "avg_delay").iloc[0]
+            ms1.metric("🔴 Plus en retard",     worst["station"], f"{worst['avg_delay']:.1f} min")
+            ms2.metric("🟢 Plus ponctuelle",    best["station"],  f"{best['avg_delay']:.1f} min")
+            ms3.metric("📍 Gares cartographiées", f"{len(station_geo)}")
+            ms4.metric("🛤️ Routes représentées",  f"{len(route_arcs)}")
+
+            st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+
+            # ── PyDeck layers ────────────────────────────────────────────────
+            DARK_MAP = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+
+            # ColumnLayer — 3D pillars per station
+            col_layer = pdk.Layer(
+                "ColumnLayer",
+                data=station_geo,
+                get_position=["lon", "lat"],
+                get_elevation="elevation",
+                elevation_scale=1,
+                radius=22_000,
+                get_fill_color="color",
+                pickable=True,
+                auto_highlight=True,
+                coverage=0.88,
+                extruded=True,
+            )
+
+            # ScatterplotLayer — halos around stations
+            scatter_layer = pdk.Layer(
+                "ScatterplotLayer",
+                data=station_geo,
+                get_position=["lon", "lat"],
+                get_radius=25_000,
+                get_fill_color=[[c[0], c[1], c[2], 40] for c in station_geo["color"]],
+                get_line_color=station_geo["color"].tolist(),
+                line_width_min_pixels=1,
+                stroked=True,
+                filled=True,
+                pickable=False,
+            )
+
+            # ArcLayer — routes connecting stations
+            arc_layer = pdk.Layer(
+                "ArcLayer",
+                data=route_arcs,
+                get_source_position=["dep_lon", "dep_lat"],
+                get_target_position=["arr_lon", "arr_lat"],
+                get_source_color="src_color",
+                get_target_color="tgt_color",
+                auto_highlight=True,
+                width_scale=0.0001,
+                get_width="arc_width",
+                width_min_pixels=1,
+                width_max_pixels=8,
+                pickable=True,
+                great_circle=False,
+            )
+
+            # TextLayer — station name labels
+            text_layer = pdk.Layer(
+                "TextLayer",
+                data=station_geo,
+                get_position=["lon", "lat"],
+                get_text="station",
+                get_size=14,
+                get_color=[255, 255, 255, 200],
+                get_angle=0,
+                get_alignment_baseline="'bottom'",
+                get_text_anchor="'middle'",
+                pickable=False,
+            )
+
+            tooltip_col = {
+                "html": (
+                    "<b style='color:#a5b4fc'>{station}</b><br/>"
+                    "⏱ Retard moyen : <b>{avg_delay_r} min</b><br/>"
+                    "✅ Ponctualité : <b>{punct_pct}%</b><br/>"
+                    "❌ Annulations : <b>{cancel_pct}%</b><br/>"
+                    "🗂 Nb trajets : <b>{n_trips}</b>"
+                ),
+                "style": {
+                    "backgroundColor": "#0f172a",
+                    "color": "#e2e8f0",
+                    "fontSize": "13px",
+                    "padding": "10px 14px",
+                    "borderRadius": "8px",
+                    "border": "1px solid #334155",
+                },
+            }
+            tooltip_arc = {
+                "html": (
+                    "<b style='color:#86efac'>{route}</b><br/>"
+                    "⏱ Retard moyen : <b>{avg_delay_r} min</b><br/>"
+                    "⏩ Retard départ : <b>{dep_delay:.1f} min</b><br/>"
+                    "⏱ Durée trajet : <b>{journey_time_r} min</b><br/>"
+                    "❌ Annulations : <b>{cancel_pct}%</b><br/>"
+                    "🗂 Trajets : <b>{n_trips}</b>"
+                ),
+                "style": {
+                    "backgroundColor": "#0f172a",
+                    "color": "#e2e8f0",
+                    "fontSize": "13px",
+                    "padding": "10px 14px",
+                    "borderRadius": "8px",
+                    "border": "1px solid #334155",
+                },
+            }
+
+            if view_mode.startswith("🏙️"):
+                layers = [scatter_layer, col_layer, text_layer]
+                view_state = pdk.ViewState(
+                    latitude=46.6, longitude=2.6,
+                    zoom=4.9, pitch=55, bearing=10,
+                    min_zoom=3, max_zoom=12,
+                )
+                deck = pdk.Deck(
+                    layers=layers,
+                    initial_view_state=view_state,
+                    map_style=DARK_MAP,
+                    tooltip=tooltip_col,
+                )
+                st.markdown(
+                    '<p style="color:#64748b;font-size:0.78rem;margin-bottom:0.4rem">'
+                    "🏙️ <b>Colonnes 3D</b> — hauteur = retard moyen · couleur verte→rouge = faible→fort · "
+                    "survolez une gare pour les détails</p>",
+                    unsafe_allow_html=True,
+                )
+                st.pydeck_chart(deck, use_container_width=True, height=580)
+
+            elif view_mode.startswith("🌐"):
+                layers = [scatter_layer, arc_layer]
+                view_state = pdk.ViewState(
+                    latitude=46.6, longitude=2.6,
+                    zoom=4.9, pitch=45, bearing=-10,
+                    min_zoom=3, max_zoom=12,
+                )
+                deck = pdk.Deck(
+                    layers=layers,
+                    initial_view_state=view_state,
+                    map_style=DARK_MAP,
+                    tooltip=tooltip_arc,
+                )
+                st.markdown(
+                    '<p style="color:#64748b;font-size:0.78rem;margin-bottom:0.4rem">'
+                    "🌐 <b>Arcs des trajets</b> — épaisseur = fréquence · couleur verte→rouge = retard faible→fort · "
+                    "survolez un arc pour les détails</p>",
+                    unsafe_allow_html=True,
+                )
+                st.pydeck_chart(deck, use_container_width=True, height=580)
+
+            else:
+                # Combined: columns + arcs
+                layers = [scatter_layer, arc_layer, col_layer]
+                view_state = pdk.ViewState(
+                    latitude=46.6, longitude=2.6,
+                    zoom=4.8, pitch=50, bearing=5,
+                    min_zoom=3, max_zoom=12,
+                )
+                deck = pdk.Deck(
+                    layers=layers,
+                    initial_view_state=view_state,
+                    map_style=DARK_MAP,
+                    tooltip=tooltip_col,
+                )
+                st.markdown(
+                    '<p style="color:#64748b;font-size:0.78rem;margin-bottom:0.4rem">'
+                    "🔀 <b>Vue combinée</b> — colonnes par gare + arcs des routes · "
+                    "survolez les éléments pour les détails</p>",
+                    unsafe_allow_html=True,
+                )
+                st.pydeck_chart(deck, use_container_width=True, height=580)
+
+            # ── Legend ───────────────────────────────────────────────────────
+            st.markdown(
+                '<div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;'
+                'margin-top:0.5rem;padding:0.6rem 1rem;background:#f0f4ff;'
+                'border-radius:10px;border:1px solid #dbeafe">'
+                '<span style="font-size:0.75rem;font-weight:700;color:#475569">Légende :</span>'
+                '<span style="font-size:0.75rem;color:#475569">🟢 Faible retard</span>'
+                '<span style="font-size:0.75rem;color:#475569">🟡 Retard modéré</span>'
+                '<span style="font-size:0.75rem;color:#475569">🔴 Retard important</span>'
+                '<span style="font-size:0.75rem;color:#94a3b8">· '
+                f'Données 2018–2025 · {len(route_arcs)} routes · {len(station_geo)} gares</span>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
