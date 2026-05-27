@@ -798,27 +798,43 @@ def predict(dep, arr, date, pipeline, route_stats):
 
 
 # ── Chart helpers ──────────────────────────────────────────────────────────────
+_DARK  = C["text"]     # "#0f172a"
+_MUTED = C["muted"]    # "#475569"
+
 def chart_style(fig, height: int = 320, margin=None):
     m = margin or dict(t=28, b=24, l=14, r=14)
+    axis_common = dict(
+        gridcolor=C["grid"], linecolor="#94a3b8",
+        zeroline=False, showline=True, linewidth=1,
+        tickfont=dict(color=_DARK, size=11, family="Inter"),
+        title_font=dict(color=_DARK, size=12, family="Inter"),
+    )
     fig.update_layout(
         height=height, margin=m,
         plot_bgcolor=C["chart_bg"], paper_bgcolor="white",
-        font=dict(family="Inter", size=12, color=C["text"]),
-        xaxis=dict(
-            gridcolor=C["grid"], linecolor="#cbd5e1",
-            zeroline=False, showline=True, linewidth=1,
-        ),
-        yaxis=dict(
-            gridcolor=C["grid"], linecolor="#cbd5e1",
-            zeroline=False, showline=True, linewidth=1,
+        font=dict(family="Inter", size=12, color=_DARK),
+        title_font=dict(color=_DARK),
+        legend=dict(font=dict(color=_DARK, size=11)),
+        xaxis={**axis_common},
+        yaxis={**axis_common},
+        coloraxis_colorbar=dict(
+            tickfont=dict(color=_DARK, size=10),
+            title_font=dict(color=_DARK, size=11),
         ),
     )
-    # Thicker lines by default for line charts
+    # Thicker lines by default for line/scatter traces
     fig.update_traces(
         selector=dict(type="scatter", mode="lines"),
         line=dict(width=2.5),
     )
     return fig
+
+
+def _hex_rgba(hex_color: str, alpha: float = 1.0) -> str:
+    """Convert #rrggbb to rgba(r,g,b,a) string."""
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
 
 
 def make_gauge(v: float, max_val: float = 60) -> go.Figure:
@@ -1431,41 +1447,87 @@ elif page == "explore":
 
         with t2c1:
             section_title(t("e_boxplot_season"), "📦")
-            season_order = ["winter", "spring", "summer", "autumn"]
-            season_labels = {s: slabel(s) for s in season_order}
-            df_box_s = df_f.dropna(subset=[TARGET]).copy()
-            df_box_s["Saison"] = df_box_s["season"].map(season_labels)
-            season_label_order = [season_labels[s] for s in season_order if s in season_labels]
-            season_colors = {
-                slabel("winter"): C["sky"],
-                slabel("spring"): "#22c55e",
-                slabel("summer"): C["warning"],
-                slabel("autumn"): C["orange"],
-            }
-            fig_bs = px.box(
-                df_box_s, x="Saison", y=TARGET,
-                category_orders={"Saison": season_label_order},
-                color="Saison", color_discrete_map=season_colors,
-                labels={TARGET: t("e_delay_ax")},
+            SEASON_CFG = [
+                ("winter", slabel("winter"), C["sky"]),
+                ("spring", slabel("spring"), "#22c55e"),
+                ("summer", slabel("summer"), "#f59e0b"),
+                ("autumn", slabel("autumn"), C["orange"]),
+            ]
+            fig_bs = go.Figure()
+            for sk, lbl, clr in SEASON_CFG:
+                vals = df_f[df_f["season"] == sk][TARGET].dropna()
+                if len(vals) == 0:
+                    continue
+                fig_bs.add_trace(go.Box(
+                    y=vals,
+                    name=lbl,
+                    # border + median line = solid, saturated color → always visible
+                    line=dict(color=clr, width=2.2),
+                    # fill = transparent so text/labels behind remain readable
+                    fillcolor=_hex_rgba(clr, 0.18),
+                    marker=dict(
+                        color=clr,
+                        size=4,
+                        opacity=0.75,
+                        line=dict(color="white", width=0.8),
+                    ),
+                    boxpoints="outliers",
+                    showlegend=False,
+                ))
+            fig_bs.update_layout(
+                showlegend=False,
+                xaxis_title="",
+                yaxis_title=t("e_delay_ax"),
+                xaxis=dict(
+                    tickfont=dict(color=_DARK, size=12, family="Inter"),
+                    title_font=dict(color=_DARK),
+                ),
+                yaxis=dict(
+                    tickfont=dict(color=_DARK, size=11, family="Inter"),
+                    title_font=dict(color=_DARK),
+                ),
+                font=dict(color=_DARK, family="Inter"),
             )
-            fig_bs.update_layout(showlegend=False, xaxis_title="", yaxis_title=t("e_delay_ax"))
-            st.plotly_chart(chart_style(fig_bs, 350), use_container_width=True)
+            st.plotly_chart(chart_style(fig_bs, 360), use_container_width=True)
 
         with t2c2:
             section_title(t("e_boxplot_year"), "📦")
-            df_box_y = df_f.dropna(subset=[TARGET]).copy()
-            df_box_y["Année"] = df_box_y["year"].astype(str)
-            years_sorted = sorted(df_box_y["Année"].unique())
-            fig_by = px.box(
-                df_box_y, x="Année", y=TARGET,
-                color="Année",
-                color_discrete_sequence=CHART_COLORS,
-                category_orders={"Année": years_sorted},
-                labels={TARGET: t("e_delay_ax"), "Année": "Année"},
+            years_sorted = sorted(df_f["year"].dropna().unique().astype(int))
+            fig_by = go.Figure()
+            for i, yr in enumerate(years_sorted):
+                vals = df_f[df_f["year"] == yr][TARGET].dropna()
+                if len(vals) == 0:
+                    continue
+                clr = CHART_COLORS[i % len(CHART_COLORS)]
+                fig_by.add_trace(go.Box(
+                    y=vals,
+                    name=str(yr),
+                    line=dict(color=clr, width=2.2),
+                    fillcolor=_hex_rgba(clr, 0.18),
+                    marker=dict(
+                        color=clr,
+                        size=4,
+                        opacity=0.75,
+                        line=dict(color="white", width=0.8),
+                    ),
+                    boxpoints="outliers",
+                    showlegend=False,
+                ))
+            fig_by.update_layout(
+                showlegend=False,
+                xaxis_title="Année",
+                yaxis_title=t("e_delay_ax"),
+                xaxis=dict(
+                    tickfont=dict(color=_DARK, size=12, family="Inter"),
+                    title_font=dict(color=_DARK),
+                ),
+                yaxis=dict(
+                    tickfont=dict(color=_DARK, size=11, family="Inter"),
+                    title_font=dict(color=_DARK),
+                ),
+                font=dict(color=_DARK, family="Inter"),
             )
-            fig_by.update_layout(showlegend=False,
-                                  xaxis_title="Année", yaxis_title=t("e_delay_ax"))
-            st.plotly_chart(chart_style(fig_by, 350), use_container_width=True)
+            st.plotly_chart(chart_style(fig_by, 360), use_container_width=True)
 
         # Delay categories pie
         section_title(t("e_delay_cat"), "🍩")
