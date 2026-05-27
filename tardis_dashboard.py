@@ -691,8 +691,10 @@ def precip_category(rr: float) -> str:
     if pd.isna(rr) or rr <= 0:
         return "dry"
     if rr < 2:
-        return "light"
+        return "trace"
     if rr < 10:
+        return "light"
+    if rr < 30:
         return "moderate"
     return "heavy"
 
