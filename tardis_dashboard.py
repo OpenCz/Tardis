@@ -97,7 +97,26 @@ st.markdown(
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 *, *::before, *::after {{ box-sizing: border-box; }}
-html, body, [class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
+/* Force couleurs texte sombres sur TOUT le body (évite blanc-sur-blanc) */
+html, body {{ background-color: {C["bg"]} !important; color: {C["text"]} !important; }}
+[class*="css"] {{ font-family: 'Inter', sans-serif !important; }}
+
+/* Forcer la zone principale en mode clair */
+.main, .main .block-container, [data-testid="stAppViewContainer"] {{
+    background-color: {C["bg"]} !important;
+    color: {C["text"]} !important;
+}}
+/* Texte par défaut toujours sombre dans la zone principale */
+.main p, .main span, .main label, .main div {{
+    color: {C["text"]};
+}}
+/* Conteneurs Plotly : fond blanc + texte sombre = lisible */
+.js-plotly-plot .plotly text, .js-plotly-plot .plotly .gtitle,
+.js-plotly-plot .plotly .xtitle, .js-plotly-plot .plotly .ytitle,
+.js-plotly-plot .plotly .xtick text, .js-plotly-plot .plotly .ytick text {{
+    fill: {C["text"]} !important;
+    color: {C["text"]} !important;
+}}
 .main .block-container {{ padding: 1.75rem 2.5rem 3rem; max-width: 1320px; }}
 
 /* ── Sidebar ── */
@@ -798,28 +817,45 @@ def predict(dep, arr, date, pipeline, route_stats):
 
 
 # ── Chart helpers ──────────────────────────────────────────────────────────────
-_DARK  = C["text"]     # "#0f172a"
-_MUTED = C["muted"]    # "#475569"
+_DARK  = "#0f172a"   # texte sombre — couleur fixe, pas via C[] pour éviter toute confusion
+_MUTED = "#475569"
 
 def chart_style(fig, height: int = 320, margin=None):
     m = margin or dict(t=28, b=24, l=14, r=14)
     axis_common = dict(
-        gridcolor=C["grid"], linecolor="#94a3b8",
-        zeroline=False, showline=True, linewidth=1,
-        tickfont=dict(color=_DARK, size=11, family="Inter"),
+        gridcolor="#e2e8f0",
+        linecolor="#94a3b8",
+        zeroline=False,
+        showline=True,
+        linewidth=1,
+        tickfont  =dict(color=_DARK, size=11, family="Inter"),
         title_font=dict(color=_DARK, size=12, family="Inter"),
     )
     fig.update_layout(
-        height=height, margin=m,
-        plot_bgcolor=C["chart_bg"], paper_bgcolor="white",
+        height=height,
+        margin=m,
+        # Fond blanc explicite — theme=None dans st.plotly_chart garantit que
+        # Streamlit ne l'écrase pas avec du blanc-sur-blanc en dark mode
+        plot_bgcolor ="#ffffff",
+        paper_bgcolor="#ffffff",
         font=dict(family="Inter", size=12, color=_DARK),
         title_font=dict(color=_DARK),
-        legend=dict(font=dict(color=_DARK, size=11)),
+        legend=dict(
+            font=dict(color=_DARK, size=11, family="Inter"),
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#e2e8f0",
+            borderwidth=1,
+        ),
         xaxis={**axis_common},
         yaxis={**axis_common},
         coloraxis_colorbar=dict(
-            tickfont=dict(color=_DARK, size=10),
-            title_font=dict(color=_DARK, size=11),
+            tickfont =dict(color=_DARK, size=10, family="Inter"),
+            title_font=dict(color=_DARK, size=11, family="Inter"),
+        ),
+        hoverlabel=dict(
+            bgcolor="#1e293b",
+            font=dict(color="#f1f5f9", size=12, family="Inter"),
+            bordercolor="#334155",
         ),
     )
     # Thicker lines by default for line/scatter traces
@@ -1126,7 +1162,7 @@ if page == "predict":
                 st.caption(t("p_approx"))
 
             st.markdown("<div style='height:0.25rem'></div>", unsafe_allow_html=True)
-            st.plotly_chart(make_gauge(v), use_container_width=True)
+            st.plotly_chart(make_gauge(v), use_container_width=True, theme=None)
 
             hist = df[
                 (df["Departure station"] == dep_) & (df["Arrival station"] == arr_)
@@ -1175,7 +1211,7 @@ if page == "predict":
                 fig.update_layout(showlegend=False,
                                   xaxis_title=t("e_delay_ax"),
                                   yaxis_title=t("e_count_ax"))
-                st.plotly_chart(chart_style(fig, 280), use_container_width=True)
+                st.plotly_chart(chart_style(fig, 280), use_container_width=True, theme=None)
             else:
                 st.info("Pas assez d'historique.")
 
@@ -1203,7 +1239,7 @@ if page == "predict":
                 fig2.update_traces(textposition="outside", textfont_size=12)
                 fig2.update_layout(coloraxis_showscale=False, showlegend=False,
                                    xaxis_title="", yaxis_title=t("e_delay_ax"))
-                st.plotly_chart(chart_style(fig2, 280), use_container_width=True)
+                st.plotly_chart(chart_style(fig2, 280), use_container_width=True, theme=None)
 
         # Chart 3: Day-of-week comparison
         with ch3:
@@ -1248,7 +1284,7 @@ if page == "predict":
                     line_width=2, layer="below",
                     annotation_text="▲", annotation_position="top",
                 )
-                st.plotly_chart(chart_style(fig3, 280), use_container_width=True)
+                st.plotly_chart(chart_style(fig3, 280), use_container_width=True, theme=None)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1310,7 +1346,7 @@ elif page == "explore":
             ))
             fig.update_layout(showlegend=False, bargap=0.04,
                               xaxis_title=t("e_delay_ax"), yaxis_title=t("e_count_ax"))
-            st.plotly_chart(chart_style(fig), use_container_width=True)
+            st.plotly_chart(chart_style(fig), use_container_width=True, theme=None)
 
         with c2:
             section_title(t("e_trend"), "📈")
@@ -1333,7 +1369,7 @@ elif page == "explore":
                            annotation_bgcolor="rgba(255,255,255,0.8)")
             fig2.update_layout(showlegend=False,
                                xaxis_title="", yaxis_title=t("e_delay_ax"))
-            st.plotly_chart(chart_style(fig2), use_container_width=True)
+            st.plotly_chart(chart_style(fig2), use_container_width=True, theme=None)
 
         c3, c4 = st.columns(2, gap="medium")
         with c3:
@@ -1359,7 +1395,7 @@ elif page == "explore":
                 textposition="outside", textfont_size=10,
                 marker_line_color="white", marker_line_width=0.5,
             )
-            st.plotly_chart(chart_style(fig3, 430), use_container_width=True)
+            st.plotly_chart(chart_style(fig3, 430), use_container_width=True, theme=None)
 
         with c4:
             section_title(t("e_heatmap"), "🌡️")
@@ -1374,7 +1410,7 @@ elif page == "explore":
             )
             fig4.update_traces(textfont=dict(size=13, family="Inter", color="white"))
             fig4.update_layout(xaxis_title="", yaxis_title="Année")
-            st.plotly_chart(chart_style(fig4, 430), use_container_width=True)
+            st.plotly_chart(chart_style(fig4, 430), use_container_width=True, theme=None)
 
         # Export
         st.markdown("<hr class='sep'>", unsafe_allow_html=True)
@@ -1412,7 +1448,7 @@ elif page == "explore":
                 ))
             fig_dow.update_layout(barmode="group", xaxis_title="",
                                   yaxis_title=t("e_delay_ax"), showlegend=False)
-            st.plotly_chart(chart_style(fig_dow, 320), use_container_width=True)
+            st.plotly_chart(chart_style(fig_dow, 320), use_container_width=True, theme=None)
 
         with t1c2:
             section_title(t("e_by_month"), "📆")
@@ -1441,7 +1477,7 @@ elif page == "explore":
             ))
             fig_mo.update_layout(showlegend=False,
                                   xaxis_title="", yaxis_title=t("e_delay_ax"))
-            st.plotly_chart(chart_style(fig_mo, 320), use_container_width=True)
+            st.plotly_chart(chart_style(fig_mo, 320), use_container_width=True, theme=None)
 
         t2c1, t2c2 = st.columns(2, gap="medium")
 
@@ -1488,7 +1524,7 @@ elif page == "explore":
                 ),
                 font=dict(color=_DARK, family="Inter"),
             )
-            st.plotly_chart(chart_style(fig_bs, 360), use_container_width=True)
+            st.plotly_chart(chart_style(fig_bs, 360), use_container_width=True, theme=None)
 
         with t2c2:
             section_title(t("e_boxplot_year"), "📦")
@@ -1527,7 +1563,7 @@ elif page == "explore":
                 ),
                 font=dict(color=_DARK, family="Inter"),
             )
-            st.plotly_chart(chart_style(fig_by, 360), use_container_width=True)
+            st.plotly_chart(chart_style(fig_by, 360), use_container_width=True, theme=None)
 
         # Delay categories pie
         section_title(t("e_delay_cat"), "🍩")
@@ -1553,7 +1589,7 @@ elif page == "explore":
         fig_cat.update_layout(showlegend=True, height=340,
                                margin=dict(t=20, b=20, l=20, r=20),
                                paper_bgcolor="white")
-        st.plotly_chart(fig_cat, use_container_width=True)
+        st.plotly_chart(fig_cat, use_container_width=True, theme=None)
 
     # ── TAB 3: Routes ──────────────────────────────────────────────────────
     with tabs[2]:
@@ -1571,7 +1607,7 @@ elif page == "explore":
         fig_ad.update_layout(barmode="group", xaxis_title="Année",
                               yaxis_title=t("e_delay_ax"), showlegend=True,
                               xaxis=dict(type="category"))
-        st.plotly_chart(chart_style(fig_ad, 300), use_container_width=True)
+        st.plotly_chart(chart_style(fig_ad, 300), use_container_width=True, theme=None)
 
         r1, r2 = st.columns(2, gap="medium")
 
@@ -1593,7 +1629,7 @@ elif page == "explore":
                 xaxis_title=t("e_delay_ax"),
             )
             fig_tr.update_traces(textposition="outside", textfont_size=9)
-            st.plotly_chart(chart_style(fig_tr, 540), use_container_width=True)
+            st.plotly_chart(chart_style(fig_tr, 540), use_container_width=True, theme=None)
 
         with r2:
             section_title(t("e_scatter_jt"), "🔵")
@@ -1631,7 +1667,7 @@ elif page == "explore":
                 coloraxis_colorbar=dict(title=t("e_delay_ax"), thickness=12),
                 showlegend=False,
             )
-            st.plotly_chart(chart_style(fig_sc, 540), use_container_width=True)
+            st.plotly_chart(chart_style(fig_sc, 540), use_container_width=True, theme=None)
 
         # Route detail table
         st.markdown("<hr class='sep'>", unsafe_allow_html=True)
@@ -1698,7 +1734,7 @@ elif page == "explore":
                     margin=dict(t=20, b=20, l=10, r=10),
                     paper_bgcolor="white",
                 )
-                st.plotly_chart(fig_cause, use_container_width=True)
+                st.plotly_chart(fig_cause, use_container_width=True, theme=None)
             else:
                 st.info("Données de causes non disponibles.")
 
@@ -1727,7 +1763,7 @@ elif page == "explore":
                     xaxis_title="", yaxis_title="% contribution",
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
                 )
-                st.plotly_chart(chart_style(fig_ct, 380), use_container_width=True)
+                st.plotly_chart(chart_style(fig_ct, 380), use_container_width=True, theme=None)
 
         # Stacked bar by year
         section_title("Part de chaque cause par année (barres empilées)", "📊")
@@ -1745,7 +1781,7 @@ elif page == "explore":
                 xaxis=dict(type="category"),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02),
             )
-            st.plotly_chart(chart_style(fig_sb, 340), use_container_width=True)
+            st.plotly_chart(chart_style(fig_sb, 340), use_container_width=True, theme=None)
 
     # ── TAB 5: Cancellations ───────────────────────────────────────────────
     with tabs[4]:
@@ -1770,7 +1806,7 @@ elif page == "explore":
                 xaxis_title="", yaxis_title=t("e_cancel_rate"),
                 yaxis_tickformat=".1%",
             )
-            st.plotly_chart(chart_style(fig_ct2, 310), use_container_width=True)
+            st.plotly_chart(chart_style(fig_ct2, 310), use_container_width=True, theme=None)
 
         with can2:
             section_title(t("e_cancel_by_st"), "🏆")
@@ -1791,7 +1827,7 @@ elif page == "explore":
                 xaxis_tickformat=".1%",
             )
             fig_tc.update_traces(textposition="outside", textfont_size=10)
-            st.plotly_chart(chart_style(fig_tc, 430), use_container_width=True)
+            st.plotly_chart(chart_style(fig_tc, 430), use_container_width=True, theme=None)
 
         # Cancellation by season & year heatmap
         section_title("Taux d'annulation : saison × année", "🌡️")
@@ -1806,7 +1842,7 @@ elif page == "explore":
             labels={"color": "Annulés (%)"},
         )
         fig_ch.update_layout(xaxis_title="", yaxis_title="Année")
-        st.plotly_chart(chart_style(fig_ch, 380), use_container_width=True)
+        st.plotly_chart(chart_style(fig_ch, 380), use_container_width=True, theme=None)
 
     # ── TAB 6: Carte 3D ────────────────────────────────────────────────────
     with tabs[5]:
@@ -2120,7 +2156,7 @@ elif page == "models":
             fig_imp.update_layout(
                 xaxis_title="Importance relative", yaxis_title="", showlegend=False
             )
-            st.plotly_chart(chart_style(fig_imp, 500), use_container_width=True)
+            st.plotly_chart(chart_style(fig_imp, 500), use_container_width=True, theme=None)
         else:
             st.info(t("m_imp_na"))
 
@@ -2195,4 +2231,4 @@ elif page == "models":
                         paper_bgcolor="white",
                         legend=dict(orientation="v", font=dict(size=10)),
                     )
-                    st.plotly_chart(fig_radar, use_container_width=True)
+                    st.plotly_chart(fig_radar, use_container_width=True, theme=None)
