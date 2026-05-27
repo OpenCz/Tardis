@@ -1453,15 +1453,18 @@ elif page == "explore":
 
         with t2c2:
             section_title(t("e_boxplot_year"), "📦")
-            df_box_y = df_f.dropna(subset=[TARGET])
+            df_box_y = df_f.dropna(subset=[TARGET]).copy()
+            df_box_y["Année"] = df_box_y["year"].astype(str)
+            years_sorted = sorted(df_box_y["Année"].unique())
             fig_by = px.box(
-                df_box_y, x="year", y=TARGET,
-                color="year", color_continuous_scale="Viridis",
-                labels={TARGET: t("e_delay_ax"), "year": "Année"},
+                df_box_y, x="Année", y=TARGET,
+                color="Année",
+                color_discrete_sequence=CHART_COLORS,
+                category_orders={"Année": years_sorted},
+                labels={TARGET: t("e_delay_ax"), "Année": "Année"},
             )
-            fig_by.update_layout(coloraxis_showscale=False, showlegend=False,
-                                  xaxis_title="Année", yaxis_title=t("e_delay_ax"),
-                                  xaxis=dict(type="category"))
+            fig_by.update_layout(showlegend=False,
+                                  xaxis_title="Année", yaxis_title=t("e_delay_ax"))
             st.plotly_chart(chart_style(fig_by, 350), use_container_width=True)
 
         # Delay categories pie
