@@ -6,6 +6,7 @@ import joblib
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+from ..features import add_time_features
 from .config import ALL_FEATURES, RANDOM_STATE, TARGET
 from .dl_models import HAS_TF, HAS_TORCH, train_keras, train_torch
 from .evaluation import baseline_metrics, compare_models
@@ -29,7 +30,7 @@ def run_training(
 
     print("── Chargement des données ────────────────────────────────")
     df = pd.read_csv(dataset_path, parse_dates=["Date"])
-    df["day_of_week"] = df["Date"].dt.dayofweek
+    add_time_features(df)
     route_stats = build_route_stats(df)
     print(f"   {len(df):,} lignes | {len(route_stats)} routes uniques")
 
